@@ -1975,7 +1975,10 @@
       const res = id
         ? await apFetch("PUT",  "/noticias/" + id, body)
         : await apFetch("POST", "/noticias",        body);
-      if (!res || !res.ok) throw new Error();
+      if (!res || !res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Error al guardar la noticia");
+      }
       const resData = await res.json();
       // Guardar imágenes (usar id existente o el nuevo)
       const noticiaId = id ? parseInt(id) : resData.id;
@@ -1988,7 +1991,7 @@
       await apCargarNoticias();
       apCargarStats();
       if (window.cargarNoticias) window.cargarNoticias();
-    } catch { apToast("Error al guardar la noticia", "err"); }
+    } catch(e) { apToast(e.message || "Error al guardar la noticia", "err"); }
     finally { btn.disabled = false; btn.textContent = "Guardar noticia"; }
   };
 
@@ -2203,12 +2206,15 @@
       const res = id
         ? await apFetch("PUT",  "/areas/" + id, body)
         : await apFetch("POST", "/areas",        body);
-      if (!res || !res.ok) throw new Error();
+      if (!res || !res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Error al guardar el área");
+      }
       apToast("Área guardada ✅", "ok");
       apCloseModal("area");
       await apCargarAreas();
       if (window.cargarAreas) window.cargarAreas();
-    } catch { apToast("Error al guardar el área", "err"); }
+    } catch(e) { apToast(e.message || "Error al guardar el área", "err"); }
   };
 
   window.apDelArea = async function(id) {
