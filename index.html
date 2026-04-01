@@ -350,6 +350,15 @@
       border-bottom: 1px dotted var(--bordo); transition: opacity .15s;
     }
     .area-prof-email:hover { opacity: .7; }
+    .area-email-contacto {
+      display: inline-flex; align-items: center; gap: .35rem;
+      margin-top: .6rem; margin-bottom: .1rem;
+      background: rgba(107,26,42,.07); border: 1px solid rgba(107,26,42,.18);
+      border-radius: 99px; padding: .28rem .85rem;
+      color: var(--bordo); font-size: .82rem; font-weight: 500;
+      text-decoration: none; transition: background .15s;
+    }
+    .area-email-contacto:hover { background: rgba(107,26,42,.14); }
 
     /* Controles */
     .areas-controls {
@@ -785,7 +794,7 @@
             ? `<div class="area-info">${esc(a.descripcion)}</div>`
             : '<div class="area-info" style="font-style:italic;opacity:.6;">Descripción próximamente.</div>'}
           ${a.email_contacto
-            ? `<a class="area-prof-email" href="mailto:${esc(a.email_contacto)}" style="display:inline-block;margin:.5rem 0 .25rem;">✉ ${esc(a.email_contacto)}</a>`
+            ? `<a class="area-email-contacto" href="mailto:${esc(a.email_contacto)}">✉ ${esc(a.email_contacto)}</a>`
             : ""}
           ${a.profesores
 ? renderProfesores(a.profesores)
