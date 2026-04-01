@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Noticias · ESRN N°23</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bordo:        #6b1a2a;
+      --bordo-oscuro: #4a0f1c;
+      --bordo-claro:  #8a2a3c;
+      --crema:        #f5f0e8;
+      --crema-oscura: #ede7d9;
+      --gris:         #7a7068;
+      --blanco:       #ffffff;
+      --sombra:       0 2px 16px rgba(107,26,42,.10);
+      --sombra-hover: 0 6px 28px rgba(107,26,42,.18);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--crema); color: #2a1f1a; min-height: 100vh; }
+
+    /* ── NAV ── */
+    .nav {
+      background: var(--bordo-oscuro); color: var(--blanco);
+      padding: .85rem 1.5rem; display: flex; align-items: center;
+      justify-content: space-between; gap: 1rem; position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,.25);
+    }
+    .nav-logo { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--blanco); text-decoration: none; }
+    .nav-back { color: rgba(255,255,255,.75); text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .nav-back:hover { color: var(--blanco); }
+    .nav-user { display: flex; align-items: center; gap: .7rem; font-size: .88rem; }
+    .nav-user-name { color: rgba(255,255,255,.85); }
+    .btn-login, .btn-logout, .btn-enviar {
+      padding: .35rem .9rem; border-radius: 99px; border: 1.5px solid rgba(255,255,255,.5);
+      color: var(--blanco); background: transparent; cursor: pointer;
+      font-size: .82rem; font-weight: 500; transition: all .2s; text-decoration: none;
+    }
+    .btn-login:hover, .btn-logout:hover { background: rgba(255,255,255,.15); }
+    .btn-enviar { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.7); }
+    .btn-enviar:hover { background: rgba(255,255,255,.32); }
+    .btn-revisar { background: #b45309; border-color: #b45309; }
+    .btn-revisar:hover { background: #92400e; }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--bordo-oscuro) 0%, var(--bordo) 100%);
+      color: var(--blanco); padding: 3rem 1.5rem 2.5rem; text-align: center;
+    }
+    .hero-label { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; opacity: .7; margin-bottom: .5rem; }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .hero p { margin-top: .5rem; opacity: .8; font-size: .95rem; }
+
+    /* ── CONTENEDOR ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── FILTROS ── */
+    .filtros {
+      padding: 1.5rem 0 .5rem;
+      display: flex; flex-wrap: wrap; gap: .6rem;
+    }
+    .chip {
+      padding: .35rem .9rem; border-radius: 99px;
+      border: 1.5px solid rgba(107,26,42,.25);
+      background: var(--blanco); color: var(--bordo);
+      cursor: pointer; font-size: .85rem; font-weight: 500;
+      transition: all .18s;
+    }
+    .chip.active, .chip:hover { background: var(--bordo); color: var(--blanco); border-color: var(--bordo); }
+
+    /* ── GRID DE ARTÍCULOS ── */
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem; padding: 1.5rem 0 2rem;
+    }
+    .news-card {
+      background: var(--blanco); border-radius: 14px;
+      box-shadow: var(--sombra); overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .news-card:hover { box-shadow: var(--sombra-hover); transform: translateY(-3px); }
+    .news-card-img {
+      height: 180px; overflow: hidden; background: var(--crema-oscura);
+      display: flex; align-items: center; justify-content: center; font-size: 4rem;
+    }
+    .news-card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .news-card-body { padding: 1.1rem 1.25rem 1.25rem; flex: 1; display: flex; flex-direction: column; gap: .4rem; }
+    .news-tag-badge {
+      display: inline-block; padding: .2rem .65rem; border-radius: 99px;
+      font-size: .75rem; font-weight: 600; background: rgba(107,26,42,.08); color: var(--bordo);
+      align-self: flex-start;
+    }
+    .news-card-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--bordo-oscuro); line-height: 1.3; }
+    .news-card-meta { font-size: .78rem; color: var(--gris); display: flex; gap: .6rem; flex-wrap: wrap; }
+    .news-card-excerpt { font-size: .88rem; color: var(--gris); line-height: 1.6; flex: 1; }
+    .btn-leer {
+      margin-top: .75rem; padding: .5rem 1rem; background: var(--bordo); color: var(--blanco);
+      border: none; border-radius: 8px; cursor: pointer; font-size: .85rem; font-weight: 500;
+      align-self: flex-start; transition: background .2s;
+    }
+    .btn-leer:hover { background: var(--bordo-claro); }
+
+    /* ── PAGINACIÓN ── */
+    .paginacion { text-align: center; padding: 1rem 0 2.5rem; }
+    .btn-mas {
+      padding: .7rem 2rem; border: 2px solid var(--bordo); border-radius: 99px;
+      color: var(--bordo); background: transparent; cursor: pointer;
+      font-size: .9rem; font-weight: 600; transition: all .2s;
+    }
+    .btn-mas:hover { background: var(--bordo); color: var(--blanco); }
+    .btn-mas:disabled { opacity: .4; cursor: default; }
+
+    /* ── ESTADO VACÍO / CARGANDO ── */
+    .estado-msg { text-align: center; padding: 3rem 1rem; color: var(--gris); font-style: italic; }
+
+    /* ── MODAL ARTÍCULO ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 200;
+      align-items: flex-start; justify-content: center; overflow-y: auto; padding: 1.5rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-art {
+      background: var(--blanco); border-radius: 16px;
+      max-width: 760px; width: 100%; margin: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.25); overflow: hidden;
+    }
+    .modal-art-img {
+      width: 100%; max-height: 340px; overflow: hidden;
+      background: var(--crema-oscura); display: flex; align-items: center; justify-content: center; font-size: 5rem;
+    }
+    .modal-art-img img { width: 100%; height: 100%; object-fit: cover; }
+    .modal-art-body { padding: 1.75rem 2rem 2rem; }
+    .modal-art-tag { margin-bottom: .6rem; }
+    .modal-art-title { font-family: 'Playfair Display', serif; font-size: 1.65rem; color: var(--bordo-oscuro); line-height: 1.25; margin-bottom: .6rem; }
+    .modal-art-meta { font-size: .82rem; color: var(--gris); margin-bottom: 1.25rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+    .modal-art-excerpt { font-size: 1rem; font-weight: 500; color: #2a1f1a; margin-bottom: 1rem; line-height: 1.6; }
+    .modal-art-contenido { font-size: .95rem; color: #3a2f2a; line-height: 1.8; white-space: pre-wrap; }
+    .modal-art-close {
+      position: absolute; top: 1rem; right: 1rem;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(0,0,0,.12); border: none; color: var(--blanco);
+      font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-art-close:hover { background: rgba(0,0,0,.28); }
+    .modal-art-wrapper { position: relative; }
+
+    /* ── MODAL LOGIN / ENVIAR ── */
+    .modal-simple {
+      background: var(--blanco); border-radius: 16px;
+      max-width: 420px; width: 100%; margin: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.25); padding: 2rem;
+    }
+    .modal-simple h3 { font-family: 'Playfair Display', serif; color: var(--bordo-oscuro); margin-bottom: 1.25rem; font-size: 1.3rem; }
+    .field { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .9rem; }
+    .field label { font-size: .83rem; font-weight: 600; color: var(--bordo-oscuro); }
+    .field input, .field textarea, .field select {
+      padding: .65rem .85rem; border: 1.5px solid #ddd6d0; border-radius: 8px;
+      font-size: .9rem; font-family: inherit; transition: border-color .2s;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--bordo); }
+    .field textarea { min-height: 90px; resize: vertical; }
+    .modal-btns { display: flex; gap: .75rem; margin-top: 1rem; }
+    .btn-primary {
+      flex: 1; padding: .7rem; background: var(--bordo); color: var(--blanco);
+      border: none; border-radius: 8px; cursor: pointer; font-size: .92rem; font-weight: 600;
+      transition: background .2s;
+    }
+    .btn-primary:hover { background: var(--bordo-claro); }
+    .btn-ghost {
+      padding: .7rem 1.2rem; border: 1.5px solid #ccc; border-radius: 8px;
+      background: transparent; color: var(--gris); cursor: pointer; font-size: .88rem;
+      transition: all .2s;
+    }
+    .btn-ghost:hover { border-color: var(--bordo); color: var(--bordo); }
+    .error-msg { color: #b91c1c; font-size: .82rem; margin-top: .25rem; }
+
+    /* ── PENDIENTES ── */
+    .pendientes-list { display: flex; flex-direction: column; gap: .75rem; margin-top: 1rem; max-height: 55vh; overflow-y: auto; }
+    .pendiente-item {
+      background: var(--crema); border-radius: 10px; padding: .9rem 1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    }
+    .pendiente-titulo { font-weight: 600; color: var(--bordo-oscuro); font-size: .92rem; }
+    .pendiente-meta { font-size: .78rem; color: var(--gris); }
+    .pendiente-btns { display: flex; gap: .5rem; }
+    .btn-aprobar { padding: .35rem .8rem; background: #16a34a; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600; }
+    .btn-rechazar { padding: .35rem .8rem; background: #dc2626; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--bordo-oscuro); color: var(--blanco);
+      padding: .75rem 1.5rem; border-radius: 99px;
+      font-size: .88rem; font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
+      transition: transform .3s, opacity .3s; opacity: 0; z-index: 500; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.err { background: #b91c1c; }
+
+    /* ── FOOTER ── */
+    footer { background: var(--bordo-oscuro); color: rgba(255,255,255,.6); text-align: center; padding: 1.5rem; font-size: .82rem; }
+
+    @media (max-width: 600px) {
+      .modal-art-body { padding: 1.25rem; }
+      .modal-art-title { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="nav">
+  <a class="nav-logo" href="../">ESRN N°23</a>
+  <div class="nav-user" id="nav-user-area">
+    <a href="../" class="nav-back">← Volver al inicio</a>
+    <button class="btn-login" id="btn-login-nav" onclick="abrirModalLogin()">Iniciar sesión</button>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <p class="hero-label">ESRN N°23 · Cinco Saltos, Río Negro</p>
+  <h1>Noticias y eventos</h1>
+  <p>Todas las novedades institucionales en un solo lugar</p>
+</div>
+
+<!-- ── CONTENIDO PRINCIPAL ── -->
+<div class="container">
+  <!-- Filtros por tag -->
+  <div class="filtros" id="filtros-tags">
+    <button class="chip active" data-tag-id="" onclick="seleccionarTag(this, '')">Todos</button>
+  </div>
+
+  <!-- Grid de artículos -->
+  <div class="news-grid" id="news-grid">
+    <p class="estado-msg">Cargando noticias...</p>
+  </div>
+
+  <!-- Paginación -->
+  <div class="paginacion" id="paginacion" style="display:none">
+    <button class="btn-mas" id="btn-mas" onclick="cargarMas()">Cargar más noticias</button>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>© 2026 · ESRN N°23 · Cinco Saltos, Río Negro</footer>
+
+<!-- ── MODAL ARTÍCULO COMPLETO ── -->
+<div class="modal-overlay" id="modal-articulo">
+  <div class="modal-art-wrapper">
+    <button class="modal-art-close" onclick="cerrarModalArticulo()">×</button>
+    <div class="modal-art" id="modal-art-inner"></div>
+  </div>
+</div>
+
+<!-- ── MODAL LOGIN ── -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal-simple">
+    <h3>🔐 Iniciar sesión</h3>
+    <div class="field"><label>Usuario</label><input type="text" id="login-user" placeholder="tu.usuario"/></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••"/></div>
+    <p class="error-msg" id="login-error" style="display:none"></p>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="cerrarModal('modal-login')">Cancelar</button>
+      <button class="btn-primary" onclick="hacerLogin()">Ingresar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL ENVIAR ARTÍCULO ── -->
+<div class="modal-overlay" id="modal-enviar">
+  <div class="modal-simple" style="max-width:580px">
+    <h3>✍️ Enviar artículo</h3>
+    <div class="field"><label>Título *</label><input type="text" id="env-titulo" placeholder="Título del artículo"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      <div class="field"><label>Tag *</label>
+        <select id="env-tag">
+          <option value="">Seleccioná un tag...</option>
+        </select>
+      </div>
+      <div class="field"><label>Fecha *</label><input type="text" id="env-fecha" placeholder="DD/MM/AAAA"/></div>
+    </div>
+    <div class="field"><label>Resumen *</label><textarea id="env-excerpt" placeholder="Breve descripción (aparece en la tarjeta)..."></textarea></div>
+    <div class="field"><label>Contenido completo</label><textarea id="env-contenido" style="min-height:140px" placeholder="Cuerpo completo del artículo..."></textarea></div>
+    <p class="error-msg" id="env-error" style="display:none"></p>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="cerrarModal('modal-enviar')">Cancelar</button>
+      <button class="btn-primary" onclick="enviarArticulo()">Enviar para revisión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL PENDIENTES (PROFESOR) ── -->
+<div class="modal-overlay" id="modal-pendientes">
+  <div class="modal-simple" style="max-width:640px">
+    <h3>📋 Artículos pendientes</h3>
+    <div class="pendientes-list" id="pendientes-list">
+      <p style="color:var(--gris);font-style:italic">Cargando...</p>
+    </div>
+    <div class="modal-btns" style="margin-top:1.25rem">
+      <button class="btn-ghost" style="flex:1" onclick="cerrarModal('modal-pendientes')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "https://esrn23-backend.onrender.com";
+
+// ── Estado ──────────────────────────────────────────────────
+let paginaActual = 1;
+const LIMITE = 9;
+let tagSeleccionado = null;
+let totalNoticias = 0;
+let usuarioToken = localStorage.getItem("esrn_usuario_token");
+let usuarioNombre = localStorage.getItem("esrn_usuario_nombre");
+let usuarioRol = localStorage.getItem("esrn_usuario_rol");
+
+// ── Helper escapeHtml ────────────────────────────────────────
+function esc(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Toast ────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, tipo = "ok") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "toast show" + (tipo === "err" ? " err" : "");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+// ── Auth header ──────────────────────────────────────────────
+function authHeaders() {
+  return { "Content-Type": "application/json", "Authorization": "Bearer " + usuarioToken };
+}
+
+// ── Render navbar según estado de sesión ────────────────────
+function renderNavUsuario() {
+  const area = document.getElementById("nav-user-area");
+  if (usuarioToken && usuarioNombre) {
+    const esProf = usuarioRol === "profesor";
+    area.innerHTML = `
+      <a href="../" class="nav-back">← Volver</a>
+      <span class="nav-user-name">👤 ${esc(usuarioNombre)}</span>
+      ${esProf
+        ? `<button class="btn-login btn-revisar" onclick="abrirPendientes()">📋 Revisar pendientes</button>`
+        : `<button class="btn-enviar" onclick="abrirModalEnviar()">✍️ Enviar artículo</button>`}
+      <button class="btn-logout" onclick="cerrarSesion()">Salir</button>`;
+  } else {
+    area.innerHTML = `
+      <a href="../" class="nav-back">← Volver al inicio</a>
+      <button class="btn-login" onclick="abrirModalLogin()">Iniciar sesión</button>`;
+  }
+}
+
+// ── Cargar tags para filtros ─────────────────────────────────
+async function cargarTags() {
+  try {
+    const res = await fetch(API + "/tags");
+    const tags = await res.json();
+    const cont = document.getElementById("filtros-tags");
+    tags.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = "chip";
+      btn.dataset.tagId = t.id;
+      btn.textContent = (t.emoji || "") + " " + t.nombre;
+      btn.onclick = () => seleccionarTag(btn, t.id);
+      cont.appendChild(btn);
+    });
+    // Populate enviar select
+    const sel = document.getElementById("env-tag");
+    tags.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = (t.emoji || "") + " " + t.nombre;
+      sel.appendChild(opt);
+    });
+  } catch {}
+}
+
+function seleccionarTag(btn, tagId) {
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  tagSeleccionado = tagId || null;
+  paginaActual = 1;
+  totalNoticias = 0;
+  document.getElementById("news-grid").innerHTML = '<p class="estado-msg">Cargando...</p>';
+  cargarNoticias(true);
+}
+
+// ── Cargar noticias ──────────────────────────────────────────
+async function cargarNoticias(reset = false) {
+  if (reset) { paginaActual = 1; totalNoticias = 0; }
+  try {
+    let url = `${API}/noticias/publicas?page=${paginaActual}&limit=${LIMITE}`;
+    if (tagSeleccionado) url += `&tag_id=${tagSeleccionado}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const grid = document.getElementById("news-grid");
+
+    if (reset) grid.innerHTML = "";
+
+    if (!data.noticias || data.noticias.length === 0) {
+      if (reset) grid.innerHTML = '<p class="estado-msg">No hay noticias publicadas todavía.</p>';
+      document.getElementById("paginacion").style.display = "none";
+      return;
+    }
+
+    totalNoticias = data.total;
+    data.noticias.forEach(n => grid.appendChild(buildCard(n)));
+
+    const cargadas = paginaActual * LIMITE;
+    const btnMas = document.getElementById("btn-mas");
+    if (cargadas < totalNoticias) {
+      document.getElementById("paginacion").style.display = "block";
+      btnMas.disabled = false;
+      btnMas.textContent = "Cargar más noticias";
+    } else {
+      document.getElementById("paginacion").style.display = "none";
+    }
+  } catch {
+    document.getElementById("news-grid").innerHTML = '<p class="estado-msg">Error al cargar noticias. Intenta de nuevo más tarde.</p>';
+  }
+}
+
+function cargarMas() {
+  paginaActual++;
+  const btn = document.getElementById("btn-mas");
+  btn.disabled = true;
+  btn.textContent = "Cargando...";
+  cargarNoticias(false);
+}
+
+function buildCard(n) {
+  const card = document.createElement("div");
+  card.className = "news-card";
+
+  let imgHtml = "";
+  if (n.imagenes && n.imagenes.length > 0) {
+    imgHtml = `<div class="news-card-img"><img src="${esc(n.imagenes[0].data)}" alt=""/></div>`;
+  } else {
+    imgHtml = `<div class="news-card-img">${esc(n.emoji || "📰")}</div>`;
+  }
+
+  card.innerHTML = `
+    ${imgHtml}
+    <div class="news-card-body">
+      <span class="news-tag-badge">${esc(n.tag || "")}</span>
+      <h3 class="news-card-title">${esc(n.titulo)}</h3>
+      <div class="news-card-meta">
+        <span>📅 ${esc(n.fecha)}</span>
+        <span>✍️ ${esc(n.autor_nombre || "Administración")}</span>
+      </div>
+      <p class="news-card-excerpt">${esc(n.excerpt)}</p>
+      <button class="btn-leer" onclick="abrirArticulo(${n.id})">Leer artículo →</button>
+    </div>`;
+  return card;
+}
+
+// ── Modal artículo completo ──────────────────────────────────
+async function abrirArticulo(id) {
+  const overlay = document.getElementById("modal-articulo");
+  const inner = document.getElementById("modal-art-inner");
+  inner.innerHTML = '<div style="padding:3rem;text-align:center;color:var(--gris)">Cargando artículo...</div>';
+  overlay.classList.add("open");
+  document.body.style.overflow = "hidden";
+
+  try {
+    const res = await fetch(`${API}/noticias/${id}/completa`);
+    if (!res.ok) throw new Error();
+    const n = await res.json();
+
+    let imgHtml = "";
+    if (n.imagenes && n.imagenes.length > 0) {
+      imgHtml = `<div class="modal-art-img"><img src="${esc(n.imagenes[0].data)}" alt=""/></div>`;
+    } else {
+      imgHtml = `<div class="modal-art-img">${esc(n.emoji || "📰")}</div>`;
+    }
+
+    inner.innerHTML = `
+      ${imgHtml}
+      <div class="modal-art-body">
+        <div class="modal-art-tag"><span class="news-tag-badge">${esc(n.tag || "")}</span></div>
+        <h2 class="modal-art-title">${esc(n.titulo)}</h2>
+        <div class="modal-art-meta">
+          <span>📅 ${esc(n.fecha)}</span>
+          <span>✍️ ${esc(n.autor_nombre || "Administración")}</span>
+        </div>
+        <p class="modal-art-excerpt">${esc(n.excerpt)}</p>
+        ${n.contenido ? `<div class="modal-art-contenido">${esc(n.contenido)}</div>` : ""}
+      </div>`;
+  } catch {
+    inner.innerHTML = '<div style="padding:3rem;text-align:center;color:#b91c1c">Error al cargar el artículo.</div>';
+  }
+}
+
+function cerrarModalArticulo() {
+  document.getElementById("modal-articulo").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+// ── Modales genéricos ────────────────────────────────────────
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+// ── Login ────────────────────────────────────────────────────
+function abrirModalLogin() {
+  document.getElementById("login-error").style.display = "none";
+  document.getElementById("login-user").value = "";
+  document.getElementById("login-pass").value = "";
+  document.getElementById("modal-login").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+async function hacerLogin() {
+  const user = document.getElementById("login-user").value.trim();
+  const pass = document.getElementById("login-pass").value;
+  const errEl = document.getElementById("login-error");
+  if (!user || !pass) { errEl.textContent = "Completá todos los campos"; errEl.style.display = "block"; return; }
+
+  const body = new URLSearchParams({ username: user, password: pass });
+  try {
+    const res = await fetch(API + "/auth/login-usuario", { method: "POST", body });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Credenciales incorrectas");
+    usuarioToken = data.access_token;
+    usuarioNombre = data.nombre;
+    usuarioRol = data.rol;
+    localStorage.setItem("esrn_usuario_token", usuarioToken);
+    localStorage.setItem("esrn_usuario_nombre", usuarioNombre);
+    localStorage.setItem("esrn_usuario_rol", usuarioRol);
+    cerrarModal("modal-login");
+    renderNavUsuario();
+    toast("Bienvenido/a, " + usuarioNombre + " ✅");
+  } catch(e) {
+    errEl.textContent = e.message || "Error al iniciar sesión";
+    errEl.style.display = "block";
+  }
+}
+
+function cerrarSesion() {
+  usuarioToken = usuarioNombre = usuarioRol = null;
+  localStorage.removeItem("esrn_usuario_token");
+  localStorage.removeItem("esrn_usuario_nombre");
+  localStorage.removeItem("esrn_usuario_rol");
+  renderNavUsuario();
+  toast("Sesión cerrada");
+}
+
+// ── Enviar artículo (estudiante) ─────────────────────────────
+function abrirModalEnviar() {
+  document.getElementById("env-error").style.display = "none";
+  document.getElementById("modal-enviar").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+async function enviarArticulo() {
+  const titulo    = document.getElementById("env-titulo").value.trim();
+  const tagId     = document.getElementById("env-tag").value;
+  const tagNombre = document.getElementById("env-tag").selectedOptions[0]?.text?.replace(/^[^\w]*/, "").trim() || "";
+  const fecha     = document.getElementById("env-fecha").value.trim();
+  const excerpt   = document.getElementById("env-excerpt").value.trim();
+  const contenido = document.getElementById("env-contenido").value.trim();
+  const errEl     = document.getElementById("env-error");
+
+  if (!titulo || !tagId || !fecha || !excerpt) {
+    errEl.textContent = "Completá los campos obligatorios (*)";
+    errEl.style.display = "block";
+    return;
+  }
+
+  try {
+    const res = await fetch(API + "/noticias/enviar", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ titulo, tag: tagNombre, fecha, excerpt, contenido, tag_id: parseInt(tagId) })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Error al enviar");
+    cerrarModal("modal-enviar");
+    toast("Artículo enviado ✅ — quedará pendiente de aprobación");
+    ["env-titulo","env-fecha","env-excerpt","env-contenido"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("env-tag").selectedIndex = 0;
+  } catch(e) {
+    errEl.textContent = e.message || "Error al enviar el artículo";
+    errEl.style.display = "block";
+  }
+}
+
+// ── Revisar pendientes (profesor) ────────────────────────────
+async function abrirPendientes() {
+  document.getElementById("modal-pendientes").classList.add("open");
+  document.body.style.overflow = "hidden";
+  await cargarPendientes();
+}
+
+async function cargarPendientes() {
+  const lista = document.getElementById("pendientes-list");
+  lista.innerHTML = '<p style="color:var(--gris);font-style:italic">Cargando...</p>';
+  try {
+    const res = await fetch(API + "/noticias/pendientes", { headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error();
+    if (!data.length) {
+      lista.innerHTML = '<p style="color:var(--gris);font-style:italic">No hay artículos pendientes.</p>';
+      return;
+    }
+    lista.innerHTML = data.map(n => `
+      <div class="pendiente-item">
+        <div>
+          <div class="pendiente-titulo">${esc(n.titulo)}</div>
+          <div class="pendiente-meta">📅 ${esc(n.fecha)} · ✍️ ${esc(n.autor_nombre || "—")} · 🏷️ ${esc(n.tag || "")}</div>
+        </div>
+        <div class="pendiente-btns">
+          <button class="btn-aprobar" onclick="cambiarEstado(${n.id},'aprobada')">✅ Aprobar</button>
+          <button class="btn-rechazar" onclick="cambiarEstado(${n.id},'rechazada')">❌ Rechazar</button>
+        </div>
+      </div>`).join("");
+  } catch {
+    lista.innerHTML = '<p style="color:#b91c1c">Error al cargar pendientes.</p>';
+  }
+}
+
+async function cambiarEstado(id, estado) {
+  try {
+    const res = await fetch(`${API}/noticias/${id}/estado`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({ estado })
+    });
+    if (!res.ok) throw new Error();
+    toast(estado === "aprobada" ? "Artículo aprobado ✅" : "Artículo rechazado");
+    await cargarPendientes();
+    cargarNoticias(true);
+  } catch { toast("Error al cambiar estado", "err"); }
+}
+
+// ── Cerrar modales con Escape o click fuera ──────────────────
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".modal-overlay.open").forEach(m => {
+      m.classList.remove("open");
+      document.body.style.overflow = "";
+    });
+  }
+});
+document.querySelectorAll(".modal-overlay").forEach(overlay => {
+  overlay.addEventListener("click", e => {
+    if (e.target === overlay) {
+      overlay.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+  });
+});
+
+// ── Login con Enter ──────────────────────────────────────────
+document.getElementById("login-pass").addEventListener("keydown", e => {
+  if (e.key === "Enter") hacerLogin();
+});
+
+// ── Inicializar ──────────────────────────────────────────────
+renderNavUsuario();
+cargarTags();
+cargarNoticias(true);
+</script>
+</body>
+</html>

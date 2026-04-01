@@ -269,6 +269,14 @@
       cursor: pointer; transition: background .2s;
     }
     .btn-form:hover { background: var(--bordo-claro); }
+    .btn-ver-todas {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .55rem 1.2rem; border: 2px solid var(--bordo);
+      border-radius: 99px; color: var(--bordo); font-weight: 600;
+      font-size: .9rem; text-decoration: none; transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-ver-todas:hover { background: var(--bordo); color: var(--blanco); }
     .mapa-placeholder {
       background: linear-gradient(135deg, #f0e8e8, #e0d0d2);
       border-radius: 12px; height: 210px; display: flex;
@@ -596,7 +604,7 @@
         <h2 class="section-title">Noticias y <span>eventos</span></h2>
         <p class="section-desc">Enterate de todo lo que pasa en la ESRN N°23.</p>
       </div>
-
+      <a href="noticias/" class="btn-ver-todas">Ver todas las noticias →</a>
     </div>
     <div class="news-carousel">
       <div class="news-track-wrap">
@@ -1477,6 +1485,8 @@
       <div class="ap-tab" data-aptab="noticias">📰 Noticias</div>
       <div class="ap-tab" data-aptab="autoridades">👤 Autoridades</div>
       <div class="ap-tab" data-aptab="areas">📚 Áreas</div>
+      <div class="ap-tab" data-aptab="tags">🏷️ Tags</div>
+      <div class="ap-tab" data-aptab="usuarios">👥 Usuarios</div>
       <div class="ap-tab" data-aptab="cuenta">🔑 Mi cuenta</div>
     </div>
 
@@ -1487,6 +1497,7 @@
         <div class="ap-page-hdr"><div><h3>Bienvenido 👋</h3><p>Resumen general del sitio institucional</p></div></div>
         <div class="ap-stats">
           <div class="ap-stat"><div class="ap-val" id="ap-stat-n">—</div><div class="ap-lbl">Noticias activas</div></div>
+          <div class="ap-stat"><div class="ap-val" id="ap-stat-p" style="color:#b45309">—</div><div class="ap-lbl">Pendientes de revisión</div></div>
           <div class="ap-stat"><div class="ap-val" id="ap-stat-a">—</div><div class="ap-lbl">Autoridades</div></div>
           <div class="ap-stat"><div class="ap-val" id="ap-stat-ar">—</div><div class="ap-lbl">Áreas</div></div>
         </div>
@@ -1532,6 +1543,34 @@
           <table class="ap-table">
             <thead><tr><th></th><th>Área</th><th>Tag</th><th>Profesores</th><th>Acciones</th></tr></thead>
             <tbody id="ap-tabla-areas"><tr><td colspan="5" class="ap-empty">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAGS -->
+      <div class="ap-page" id="aptab-tags">
+        <div class="ap-page-hdr">
+          <div><h3>Tags</h3><p>Etiquetas predefinidas para clasificar noticias</p></div>
+          <button type="button" class="ap-btn ap-btn-primary" onclick="apOpenModal('tag')">+ Nuevo tag</button>
+        </div>
+        <div class="ap-card">
+          <table class="ap-table">
+            <thead><tr><th></th><th>Nombre</th><th>Color</th><th>Orden</th><th>Acciones</th></tr></thead>
+            <tbody id="ap-tabla-tags"><tr><td colspan="5" class="ap-empty">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- USUARIOS -->
+      <div class="ap-page" id="aptab-usuarios">
+        <div class="ap-page-hdr">
+          <div><h3>Usuarios</h3><p>Cuentas de estudiantes y profesores</p></div>
+          <button type="button" class="ap-btn ap-btn-primary" onclick="apOpenModal('usuario')">+ Nuevo usuario</button>
+        </div>
+        <div class="ap-card">
+          <table class="ap-table">
+            <thead><tr><th>Rol</th><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="ap-tabla-usuarios"><tr><td colspan="5" class="ap-empty">Cargando...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1649,6 +1688,58 @@
   </div>
 </div>
 
+<!-- MODAL TAG -->
+<div class="ap-modal-overlay" id="apmodal-tag">
+  <div class="ap-modal">
+    <div class="ap-modal-hdr">
+      <h4 id="apmodal-tag-tit">Nuevo tag</h4>
+      <button type="button" class="ap-modal-close" onclick="apCloseModal('tag')">×</button>
+    </div>
+    <div class="ap-modal-body">
+      <input type="hidden" id="ap-t-id"/>
+      <div class="ap-grid2">
+        <div class="ap-mfield"><label>Nombre *</label><input type="text" id="ap-t-nombre" placeholder="Ej: Institucional"/></div>
+        <div class="ap-mfield"><label>Emoji</label><input type="text" id="ap-t-emoji" placeholder="🏷️" maxlength="4"/></div>
+      </div>
+      <div class="ap-grid2">
+        <div class="ap-mfield"><label>Color (hex)</label><input type="text" id="ap-t-color" placeholder="#6b1a2a"/></div>
+        <div class="ap-mfield"><label>Orden</label><input type="number" id="ap-t-orden" placeholder="1" min="0"/></div>
+      </div>
+    </div>
+    <div class="ap-modal-ftr">
+      <button type="button" class="ap-btn ap-btn-ghost" onclick="apCloseModal('tag')">Cancelar</button>
+      <button type="button" class="ap-btn ap-btn-primary" onclick="apGuardarTag()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="ap-modal-overlay" id="apmodal-usuario">
+  <div class="ap-modal">
+    <div class="ap-modal-hdr">
+      <h4>Nuevo usuario</h4>
+      <button type="button" class="ap-modal-close" onclick="apCloseModal('usuario')">×</button>
+    </div>
+    <div class="ap-modal-body">
+      <div class="ap-mfield"><label>Nombre completo *</label><input type="text" id="ap-u-nombre" placeholder="Ej: Ana García"/></div>
+      <div class="ap-grid2">
+        <div class="ap-mfield"><label>Usuario *</label><input type="text" id="ap-u-username" placeholder="ana.garcia"/></div>
+        <div class="ap-mfield"><label>Rol *</label>
+          <select id="ap-u-rol">
+            <option value="estudiante">👨‍🎓 Estudiante</option>
+            <option value="profesor">👩‍🏫 Profesor/a</option>
+          </select>
+        </div>
+      </div>
+      <div class="ap-mfield"><label>Contraseña *</label><input type="password" id="ap-u-pass" placeholder="Mínimo 6 caracteres"/></div>
+    </div>
+    <div class="ap-modal-ftr">
+      <button type="button" class="ap-btn ap-btn-ghost" onclick="apCloseModal('usuario')">Cancelar</button>
+      <button type="button" class="ap-btn ap-btn-primary" onclick="apGuardarUsuario()">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
 <div class="ap-toast" id="ap-toast"></div>
 
 </div><!-- /admin-panel -->
@@ -1738,6 +1829,8 @@
     apCargarNoticias();
     apCargarAutoridades();
     apCargarAreas();
+    apCargarTags();
+    apCargarUsuarios();
   }
 
   // ── LOGOUT ─────────────────────────────────────────────
@@ -1792,12 +1885,15 @@
   // ── STATS ──────────────────────────────────────────────
   async function apCargarStats() {
     try {
-      const [n, a, ar] = await Promise.all([
-        fetch(API + "/noticias").then(r => r.json()),
+      const [nAll, a, ar, pend] = await Promise.all([
+        apFetch("GET", "/noticias/todas").then(r => r.json()),
         fetch(API + "/autoridades").then(r => r.json()),
         fetch(API + "/areas").then(r => r.json()),
+        apFetch("GET", "/noticias/pendientes").then(r => r.json()),
       ]);
-      document.getElementById("ap-stat-n").textContent  = Array.isArray(n) ? n.length : "—";
+      const activas = Array.isArray(nAll) ? nAll.filter(n => n.activa && n.estado === "aprobada").length : 0;
+      document.getElementById("ap-stat-n").textContent  = activas;
+      document.getElementById("ap-stat-p").textContent  = Array.isArray(pend) ? pend.length : "—";
       document.getElementById("ap-stat-a").textContent  = Array.isArray(a) ? a.length : "—";
       document.getElementById("ap-stat-ar").textContent = Array.isArray(ar) ? ar.length : "—";
     } catch {}
@@ -1826,9 +1922,7 @@
         <td><strong style="color:var(--bordo-oscuro)">${esc(n.titulo)}</strong></td>
         <td><span class="ap-badge-tag">${esc(n.tag)}</span></td>
         <td style="color:var(--gris);font-size:.83rem">${esc(n.fecha)}</td>
-        <td>${n.activa
-          ? '<span class="ap-badge-on">Activa</span>'
-          : '<span class="ap-badge-off">Inactiva</span>'}</td>
+        <td>${{aprobada:'<span class="ap-badge-on">Aprobada</span>',pendiente:'<span style="background:#fef3c7;color:#92400e;padding:.2rem .6rem;border-radius:99px;font-size:.78rem;font-weight:600">Pendiente</span>',rechazada:'<span class="ap-badge-off">Rechazada</span>'}[n.estado || 'aprobada'] || '<span class="ap-badge-on">Aprobada</span>'}</td>
         <td><div class="ap-actions">
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apEditNoticia(${n.id})">✏️ Editar</button>
           <button type="button" class="ap-btn ap-btn-danger" onclick="apDelNoticia(${n.id})">🗑️</button>
@@ -2247,6 +2341,157 @@
       apToast("Área eliminada", "ok");
       await apCargarAreas();
       if (window.cargarAreas) window.cargarAreas();
+    } catch { apToast("Error al eliminar", "err"); }
+  };
+
+  // ── TAGS ───────────────────────────────────────────────
+  let apTags = [];
+
+  async function apCargarTags() {
+    try {
+      const res = await fetch(API + "/tags");
+      const data = await res.json();
+      apTags = Array.isArray(data) ? data : [];
+      apRenderTags();
+    } catch {}
+  }
+
+  function apRenderTags() {
+    const tb = document.getElementById("ap-tabla-tags");
+    if (!apTags.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="ap-empty">No hay tags cargados.</td></tr>';
+      return;
+    }
+    tb.innerHTML = apTags.map(t => `
+      <tr>
+        <td style="font-size:1.25rem;width:40px">${esc(t.emoji || "🏷️")}</td>
+        <td><strong style="color:var(--bordo-oscuro)">${esc(t.nombre)}</strong></td>
+        <td><span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${esc(t.color || "#6b1a2a")};vertical-align:middle"></span> <small>${esc(t.color || "")}</small></td>
+        <td style="color:var(--gris)">${t.orden}</td>
+        <td><div class="ap-actions">
+          <button type="button" class="ap-btn ap-btn-ghost" onclick="apEditTag(${t.id})">✏️ Editar</button>
+          <button type="button" class="ap-btn ap-btn-danger" onclick="apDelTag(${t.id})">🗑️</button>
+        </div></td>
+      </tr>`).join("");
+  }
+
+  window.apEditTag = function(id) {
+    const t = apTags.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById("ap-t-id").value     = t.id;
+    document.getElementById("ap-t-nombre").value = t.nombre;
+    document.getElementById("ap-t-emoji").value  = t.emoji || "🏷️";
+    document.getElementById("ap-t-color").value  = t.color || "#6b1a2a";
+    document.getElementById("ap-t-orden").value  = t.orden || 0;
+    document.getElementById("apmodal-tag-tit").textContent = "Editar tag";
+    apOpenModal("tag", false);
+  };
+
+  window.apGuardarTag = async function() {
+    const id = document.getElementById("ap-t-id").value;
+    const body = {
+      nombre: document.getElementById("ap-t-nombre").value.trim(),
+      emoji:  document.getElementById("ap-t-emoji").value.trim() || "🏷️",
+      color:  document.getElementById("ap-t-color").value.trim() || "#6b1a2a",
+      orden:  parseInt(document.getElementById("ap-t-orden").value) || 0,
+    };
+    if (!body.nombre) { apToast("El nombre es obligatorio", "err"); return; }
+    try {
+      const res = id
+        ? await apFetch("PUT",  "/tags/" + id, body)
+        : await apFetch("POST", "/tags",        body);
+      if (!res || !res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Error al guardar el tag");
+      }
+      apToast("Tag guardado ✅", "ok");
+      apCloseModal("tag");
+      await apCargarTags();
+    } catch(e) { apToast(e.message || "Error al guardar", "err"); }
+  };
+
+  window.apDelTag = async function(id) {
+    if (!confirm("¿Eliminar este tag?")) return;
+    try {
+      const res = await apFetch("DELETE", "/tags/" + id);
+      if (!res || !res.ok) throw new Error();
+      apToast("Tag eliminado", "ok");
+      await apCargarTags();
+    } catch { apToast("Error al eliminar", "err"); }
+  };
+
+  // ── USUARIOS ───────────────────────────────────────────
+  let apUsuarios = [];
+
+  async function apCargarUsuarios() {
+    try {
+      const res = await apFetch("GET", "/usuarios");
+      if (!res) return;
+      const data = await res.json();
+      apUsuarios = Array.isArray(data) ? data : [];
+      apRenderUsuarios();
+    } catch {}
+  }
+
+  function apRenderUsuarios() {
+    const tb = document.getElementById("ap-tabla-usuarios");
+    if (!apUsuarios.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="ap-empty">No hay usuarios cargados.</td></tr>';
+      return;
+    }
+    tb.innerHTML = apUsuarios.map(u => `
+      <tr>
+        <td><span class="ap-badge-tag">${u.rol === "profesor" ? "👩‍🏫 Profesor" : "👨‍🎓 Estudiante"}</span></td>
+        <td><strong style="color:var(--bordo-oscuro)">${esc(u.nombre)}</strong></td>
+        <td style="color:var(--gris);font-size:.83rem">${esc(u.username)}</td>
+        <td>${u.activa
+          ? '<span class="ap-badge-on">Activo</span>'
+          : '<span class="ap-badge-off">Inactivo</span>'}</td>
+        <td><div class="ap-actions">
+          <button type="button" class="ap-btn ap-btn-ghost" onclick="apToggleUsuario(${u.id})">${u.activa ? "Desactivar" : "Activar"}</button>
+          <button type="button" class="ap-btn ap-btn-danger" onclick="apDelUsuario(${u.id})">🗑️</button>
+        </div></td>
+      </tr>`).join("");
+  }
+
+  window.apGuardarUsuario = async function() {
+    const body = {
+      nombre:   document.getElementById("ap-u-nombre").value.trim(),
+      username: document.getElementById("ap-u-username").value.trim(),
+      rol:      document.getElementById("ap-u-rol").value,
+      password: document.getElementById("ap-u-pass").value,
+    };
+    if (!body.nombre || !body.username || !body.password) { apToast("Completá todos los campos", "err"); return; }
+    if (body.password.length < 6) { apToast("La contraseña debe tener al menos 6 caracteres", "err"); return; }
+    try {
+      const res = await apFetch("POST", "/usuarios", body);
+      if (!res || !res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Error al crear usuario");
+      }
+      apToast("Usuario creado ✅", "ok");
+      apCloseModal("usuario");
+      ["ap-u-nombre","ap-u-username","ap-u-pass"].forEach(id => document.getElementById(id).value = "");
+      await apCargarUsuarios();
+    } catch(e) { apToast(e.message || "Error al crear usuario", "err"); }
+  };
+
+  window.apToggleUsuario = async function(id) {
+    try {
+      const res = await apFetch("PUT", "/usuarios/" + id + "/activa");
+      if (!res || !res.ok) throw new Error();
+      apToast("Estado actualizado", "ok");
+      await apCargarUsuarios();
+    } catch { apToast("Error al actualizar", "err"); }
+  };
+
+  window.apDelUsuario = async function(id) {
+    if (!confirm("¿Eliminar este usuario? Se perderán sus artículos.")) return;
+    try {
+      const res = await apFetch("DELETE", "/usuarios/" + id);
+      if (!res || !res.ok) throw new Error();
+      apToast("Usuario eliminado", "ok");
+      await apCargarUsuarios();
     } catch { apToast("Error al eliminar", "err"); }
   };
 
