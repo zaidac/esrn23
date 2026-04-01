@@ -784,6 +784,9 @@
           ${a.descripcion
             ? `<div class="area-info">${esc(a.descripcion)}</div>`
             : '<div class="area-info" style="font-style:italic;opacity:.6;">Descripción próximamente.</div>'}
+          ${a.email_contacto
+            ? `<a class="area-prof-email" href="mailto:${esc(a.email_contacto)}" style="display:inline-block;margin:.5rem 0 .25rem;">✉ ${esc(a.email_contacto)}</a>`
+            : ""}
           ${a.profesores
 ? renderProfesores(a.profesores)
             : ""}
@@ -1618,6 +1621,7 @@
         <div class="ap-mfield"><label>Emoji</label><input type="text" id="ap-ar-emoji" placeholder="📐" maxlength="4"/></div>
       </div>
       <div class="ap-mfield"><label>Tag</label><input type="text" id="ap-ar-tag" placeholder="Ej: Exactas"/></div>
+      <div class="ap-mfield"><label>Email de contacto del área</label><input type="email" id="ap-ar-email" placeholder="Ej: matematica@esrn23.edu.ar"/></div>
       <div class="ap-mfield"><label>Descripción</label><textarea id="ap-ar-desc" placeholder="Descripción de lo que se trabaja en esta área..."></textarea></div>
       <!-- PROFESORES DINÁMICOS -->
       <div class="ap-mfield">
@@ -2193,6 +2197,7 @@
     document.getElementById("ap-ar-nombre").value = a.nombre;
     document.getElementById("ap-ar-emoji").value  = a.emoji || "📚";
     document.getElementById("ap-ar-tag").value    = a.tag || "";
+    document.getElementById("ap-ar-email").value  = a.email_contacto || "";
     document.getElementById("ap-ar-desc").value   = a.descripcion || "";
     document.getElementById("apmodal-area-tit").textContent = "Editar área";
     apOpenModal("area", false);
@@ -2202,11 +2207,12 @@
   window.apGuardarArea = async function() {
     const id = document.getElementById("ap-ar-id").value;
     const body = {
-      nombre:      document.getElementById("ap-ar-nombre").value.trim(),
-      emoji:       document.getElementById("ap-ar-emoji").value.trim() || "📚",
-      tag:         document.getElementById("ap-ar-tag").value.trim(),
-      descripcion: document.getElementById("ap-ar-desc").value.trim(),
-      profesores:  JSON.stringify(apProfGetAll()),
+      nombre:         document.getElementById("ap-ar-nombre").value.trim(),
+      emoji:          document.getElementById("ap-ar-emoji").value.trim() || "📚",
+      tag:            document.getElementById("ap-ar-tag").value.trim(),
+      email_contacto: document.getElementById("ap-ar-email").value.trim(),
+      descripcion:    document.getElementById("ap-ar-desc").value.trim(),
+      profesores:     JSON.stringify(apProfGetAll()),
     };
     if (!body.nombre) { apToast("El nombre es obligatorio", "err"); return; }
     try {
