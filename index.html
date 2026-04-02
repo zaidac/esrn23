@@ -508,6 +508,10 @@
     .ap-img-thumb-del:hover { background: #b91c1c; }
     .ap-img-count { font-size: .75rem; color: var(--gris); margin-top: .4rem; }
   </style>
+  <!-- Quill rich text editor -->
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 </head>
 <body>
 
@@ -1441,6 +1445,36 @@
   .ap-empty { text-align: center; padding: 2.5rem; color: var(--gris); font-style: italic; font-size: .88rem; }
   .ap-spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; vertical-align:middle; margin-right:.35rem; }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Modal noticia más ancho para la toolbar de Quill ── */
+  #apmodal-noticia .ap-modal { max-width: 660px; }
+
+  /* ── Quill Snow — overrides para tema bordo/crema ── */
+  .ap-quill-editor { min-height: 160px; }
+  .ql-toolbar.ql-snow {
+    border: 1.5px solid #ddd6d6; border-bottom: none;
+    border-radius: 8px 8px 0 0; background: var(--crema);
+    font-family: 'DM Sans', sans-serif; padding: .35rem .5rem;
+  }
+  .ql-container.ql-snow {
+    border: 1.5px solid #ddd6d6; border-radius: 0 0 8px 8px;
+    font-family: 'DM Sans', sans-serif; font-size: .9rem; color: #1e1e1e; background: #fff;
+  }
+  .ap-quill-editor:focus-within .ql-toolbar.ql-snow,
+  .ap-quill-editor:focus-within .ql-container.ql-snow { border-color: var(--bordo); }
+  .ql-editor { min-height: 120px; line-height: 1.75; }
+  .ql-snow .ql-stroke { stroke: var(--bordo-oscuro); }
+  .ql-snow .ql-fill  { fill:   var(--bordo-oscuro); }
+  .ql-snow .ql-picker { color: var(--bordo-oscuro); }
+  .ql-snow.ql-toolbar button:hover .ql-stroke,
+  .ql-snow.ql-toolbar button.ql-active .ql-stroke { stroke: var(--bordo); }
+  .ql-snow.ql-toolbar button:hover .ql-fill,
+  .ql-snow.ql-toolbar button.ql-active .ql-fill   { fill: var(--bordo); }
+  .ql-editor.ql-blank::before { color: var(--gris); font-style: italic; font-size: .88rem; }
+  .ql-snow .ql-picker-options {
+    background: var(--crema); border: 1.5px solid #ddd6d6;
+    border-radius: 6px; box-shadow: 0 4px 16px rgba(107,26,42,.12);
+  }
 </style>
 
 <!-- HTML DEL PANEL -->
@@ -1605,7 +1639,10 @@
       </div>
       <div class="ap-mfield"><label>Fecha *</label><input type="text" id="ap-n-fecha" placeholder="Ej: 03/03/2025"/></div>
       <div class="ap-mfield"><label>Resumen *</label><textarea id="ap-n-excerpt" placeholder="Descripción breve de la noticia..."></textarea></div>
-      <div class="ap-mfield"><label>Contenido completo</label><textarea id="ap-n-contenido" style="min-height:160px" placeholder="Cuerpo completo del artículo (opcional)..."></textarea></div>
+      <div class="ap-mfield">
+        <label>Contenido completo</label>
+        <div id="ap-n-contenido-editor" class="ap-quill-editor"></div>
+      </div>
       <div class="ap-mfield">
         <label>Estado</label>
         <select id="ap-n-activa">
@@ -2022,7 +2059,7 @@
         document.getElementById("ap-n-emoji").value     = "📰";
         document.getElementById("ap-n-fecha").value   = "";
         document.getElementById("ap-n-excerpt").value   = "";
-        document.getElementById("ap-n-contenido").value = "";
+        apQuillContenido.setContents([]);
         document.getElementById("ap-n-activa").value  = "1";
         document.getElementById("apmodal-noticia-tit").textContent = "Nueva noticia";
         apImgPendientes = [];
@@ -2071,7 +2108,7 @@
     document.getElementById("ap-n-emoji").value   = n.emoji || "📰";
     document.getElementById("ap-n-fecha").value   = n.fecha;
     document.getElementById("ap-n-excerpt").value   = n.excerpt;
-    document.getElementById("ap-n-contenido").value = n.contenido || "";
+    apQuillContenido.clipboard.dangerouslyPasteHTML(n.contenido || '');
     document.getElementById("ap-n-activa").value  = String(n.activa);
     document.getElementById("apmodal-noticia-tit").textContent = "Editar noticia";
     apImgPendientes = [];
@@ -2092,7 +2129,7 @@
       emoji:   document.getElementById("ap-n-emoji").value.trim() || "📰",
       fecha:   document.getElementById("ap-n-fecha").value.trim(),
       excerpt:   document.getElementById("ap-n-excerpt").value.trim(),
-      contenido: document.getElementById("ap-n-contenido").value.trim(),
+      contenido: getQuillHTML(apQuillContenido),
       activa:    parseInt(document.getElementById("ap-n-activa").value),
     };
     if (!body.titulo || !tagSel.value || !body.fecha || !body.excerpt) {
@@ -2566,6 +2603,36 @@
       if (e.target === overlay) overlay.classList.remove("open");
     });
   });
+
+  // ── Quill editor — "Contenido completo" ─────────────────────
+  const apQuillContenido = new Quill('#ap-n-contenido-editor', {
+    theme: 'snow',
+    placeholder: 'Cuerpo completo del artículo (opcional)...',
+    modules: {
+      toolbar: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ align: [] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['blockquote', 'link'],
+        ['clean']
+      ]
+    }
+  });
+
+  function getQuillHTML(q) {
+    const html = q.root.innerHTML;
+    return (html === '<p><br></p>' || q.getLength() <= 1) ? '' : html;
+  }
+
+  function renderContenido(raw) {
+    if (!raw) return '';
+    if (!/<[a-z][\s\S]*>/i.test(raw)) {
+      // Texto plano legado: convertir saltos de línea en párrafos
+      return raw.split('\n').filter(Boolean).map(l => '<p>' + DOMPurify.sanitize(l) + '</p>').join('');
+    }
+    return DOMPurify.sanitize(raw);
+  }
 
 })();
 </script>

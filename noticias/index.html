@@ -218,7 +218,34 @@
     .pendiente-excerpt { font-size: .88rem; color: var(--gris); line-height: 1.55; margin-top: .25rem; font-style: italic; }
     .pendiente-preview { display: none; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid rgba(107,26,42,.12); width: 100%; }
     .pendiente-preview.open { display: block; }
-    .pendiente-contenido { font-size: .88rem; color: #3a2f2a; line-height: 1.75; white-space: pre-wrap; }
+    .pendiente-contenido { font-size: .88rem; color: #3a2f2a; line-height: 1.75; }
+    .pendiente-contenido p { margin-bottom: .6rem; }
+    .pendiente-contenido h2 { font-size: 1.05rem; font-weight: 700; color: var(--bordo-oscuro); margin: .9rem 0 .35rem; }
+    .pendiente-contenido h3 { font-size: .95rem; font-weight: 700; color: var(--bordo-oscuro); margin: .75rem 0 .3rem; }
+    .pendiente-contenido ul, .pendiente-contenido ol { padding-left: 1.4rem; margin-bottom: .6rem; }
+    .pendiente-contenido li { margin-bottom: .2rem; }
+    .pendiente-contenido a { color: var(--bordo); text-decoration: underline; }
+    .pendiente-contenido blockquote { border-left: 3px solid var(--dorado); padding: .3rem 0 .3rem .85rem; margin: .75rem 0; color: var(--gris); font-style: italic; }
+    .pendiente-contenido .ql-align-center { text-align: center; }
+    .pendiente-contenido .ql-align-right { text-align: right; }
+    .pendiente-contenido .ql-align-justify { text-align: justify; }
+
+    /* ── Quill Snow — overrides tema bordo/crema ── */
+    .env-quill-editor { min-height: 140px; }
+    .env-quill-editor .ql-toolbar.ql-snow {
+      border: 1.5px solid #ddd6d6; border-bottom: none;
+      border-radius: 8px 8px 0 0; background: var(--crema);
+      font-family: 'DM Sans', sans-serif; padding: .35rem .5rem;
+    }
+    .env-quill-editor .ql-container.ql-snow {
+      border: 1.5px solid #ddd6d6; border-radius: 0 0 8px 8px;
+      font-family: 'DM Sans', sans-serif; font-size: .9rem; color: #1e1e1e; background: #fff;
+    }
+    .env-quill-editor:focus-within .ql-toolbar.ql-snow,
+    .env-quill-editor:focus-within .ql-container.ql-snow { border-color: var(--bordo); }
+    .env-quill-editor .ql-editor { min-height: 110px; line-height: 1.75; }
+    .env-quill-editor .ql-editor.ql-blank::before { color: var(--gris); font-style: italic; font-size: .88rem; }
+
     .btn-ver {
       padding: .3rem .75rem; border-radius: 6px; border: 1.5px solid var(--bordo);
       background: transparent; color: var(--bordo); cursor: pointer;
@@ -250,6 +277,10 @@
       .modal-art-title { font-size: 1.3rem; }
     }
   </style>
+  <!-- Quill rich text editor -->
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 </head>
 <body>
 
@@ -332,7 +363,10 @@
       <div class="field"><label>Fecha *</label><input type="text" id="env-fecha" placeholder="DD/MM/AAAA"/></div>
     </div>
     <div class="field"><label>Resumen *</label><textarea id="env-excerpt" placeholder="Breve descripción (aparece en la tarjeta)..."></textarea></div>
-    <div class="field"><label>Contenido completo</label><textarea id="env-contenido" style="min-height:140px" placeholder="Cuerpo completo del artículo..."></textarea></div>
+    <div class="field">
+      <label>Contenido completo</label>
+      <div id="env-contenido-editor" class="env-quill-editor"></div>
+    </div>
     <p class="error-msg" id="env-error" style="display:none"></p>
     <div class="modal-btns">
       <button class="btn-ghost" onclick="cerrarModal('modal-enviar')">Cancelar</button>
@@ -359,6 +393,36 @@
 
 <script>
 const API = "https://esrn23-backend.onrender.com";
+
+// ── Quill editor — "Contenido completo" ─────────────────────
+const envQuillContenido = new Quill('#env-contenido-editor', {
+  theme: 'snow',
+  placeholder: 'Cuerpo completo del artículo...',
+  modules: {
+    toolbar: [
+      [{ header: [2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ align: [] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['blockquote', 'link'],
+      ['clean']
+    ]
+  }
+});
+
+function getQuillHTML(q) {
+  const html = q.root.innerHTML;
+  return (html === '<p><br></p>' || q.getLength() <= 1) ? '' : html;
+}
+
+function renderContenido(raw) {
+  if (!raw) return '';
+  if (!/<[a-z][\s\S]*>/i.test(raw)) {
+    // Texto plano legado: convertir saltos de línea en párrafos
+    return raw.split('\n').filter(Boolean).map(l => '<p>' + DOMPurify.sanitize(l) + '</p>').join('');
+  }
+  return DOMPurify.sanitize(raw);
+}
 
 // ── Estado ──────────────────────────────────────────────────
 let paginaActual = 1;
@@ -618,7 +682,7 @@ async function enviarArticulo() {
   const tagNombre = document.getElementById("env-tag").selectedOptions[0]?.text?.replace(/^[^\w]*/, "").trim() || "";
   const fecha     = document.getElementById("env-fecha").value.trim();
   const excerpt   = document.getElementById("env-excerpt").value.trim();
-  const contenido = document.getElementById("env-contenido").value.trim();
+  const contenido = getQuillHTML(envQuillContenido);
   const errEl     = document.getElementById("env-error");
 
   if (!titulo || !tagId || !fecha || !excerpt) {
@@ -637,7 +701,8 @@ async function enviarArticulo() {
     if (!res.ok) throw new Error(data.detail || "Error al enviar");
     cerrarModal("modal-enviar");
     toast("Artículo enviado ✅ — quedará pendiente de aprobación");
-    ["env-titulo","env-fecha","env-excerpt","env-contenido"].forEach(id => document.getElementById(id).value = "");
+    ["env-titulo","env-fecha","env-excerpt"].forEach(id => document.getElementById(id).value = "");
+    envQuillContenido.setContents([]);
     document.getElementById("env-tag").selectedIndex = 0;
   } catch(e) {
     errEl.textContent = e.message || "Error al enviar el artículo";
@@ -680,7 +745,7 @@ async function cargarPendientes() {
         ${n.excerpt || n.contenido ? `
         <div class="pendiente-preview">
           ${n.contenido
-            ? `<div class="pendiente-contenido">${esc(n.contenido)}</div>`
+            ? `<div class="pendiente-contenido">${renderContenido(n.contenido)}</div>`
             : `<p style="color:var(--gris);font-style:italic;font-size:.85rem">Sin cuerpo extendido.</p>`}
         </div>` : ""}
       </div>`).join("");
