@@ -496,7 +496,7 @@ function buildCard(n) {
         <span>✍️ ${esc(n.autor_nombre || "Administración")}</span>
       </div>
       <p class="news-card-excerpt">${esc(n.excerpt)}</p>
-      <button class="btn-leer" onclick="abrirArticulo(${n.id})">Leer artículo →</button>
+      <a class="btn-leer" href="articulo/?id=${n.id}">Leer artículo →</a>
     </div>`;
   return card;
 }
