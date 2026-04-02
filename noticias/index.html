@@ -209,11 +209,22 @@
     .pendientes-list { display: flex; flex-direction: column; gap: .75rem; margin-top: 1rem; max-height: 55vh; overflow-y: auto; }
     .pendiente-item {
       background: var(--crema); border-radius: 10px; padding: .9rem 1rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      display: flex; align-items: flex-start; flex-direction: column; gap: .5rem; flex-wrap: wrap;
     }
+    .pendiente-item-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; width: 100%; }
     .pendiente-titulo { font-weight: 600; color: var(--bordo-oscuro); font-size: .92rem; }
     .pendiente-meta { font-size: .78rem; color: var(--gris); }
     .pendiente-btns { display: flex; gap: .5rem; }
+    .pendiente-excerpt { font-size: .88rem; color: var(--gris); line-height: 1.55; margin-top: .25rem; font-style: italic; }
+    .pendiente-preview { display: none; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid rgba(107,26,42,.12); width: 100%; }
+    .pendiente-preview.open { display: block; }
+    .pendiente-contenido { font-size: .88rem; color: #3a2f2a; line-height: 1.75; white-space: pre-wrap; }
+    .btn-ver {
+      padding: .3rem .75rem; border-radius: 6px; border: 1.5px solid var(--bordo);
+      background: transparent; color: var(--bordo); cursor: pointer;
+      font-size: .78rem; font-weight: 600; transition: all .2s;
+    }
+    .btn-ver:hover { background: var(--bordo); color: #fff; }
     .btn-aprobar { padding: .35rem .8rem; background: #16a34a; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600; }
     .btn-rechazar { padding: .35rem .8rem; background: #dc2626; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600; }
 
@@ -332,7 +343,7 @@
 
 <!-- ── MODAL PENDIENTES (PROFESOR) ── -->
 <div class="modal-overlay" id="modal-pendientes">
-  <div class="modal-simple" style="max-width:640px">
+  <div class="modal-simple" style="max-width:740px">
     <h3>📋 Artículos pendientes</h3>
     <div class="pendientes-list" id="pendientes-list">
       <p style="color:var(--gris);font-style:italic">Cargando...</p>
@@ -654,18 +665,35 @@ async function cargarPendientes() {
     }
     lista.innerHTML = data.map(n => `
       <div class="pendiente-item">
-        <div>
-          <div class="pendiente-titulo">${esc(n.titulo)}</div>
-          <div class="pendiente-meta">📅 ${esc(n.fecha)} · ✍️ ${esc(n.autor_nombre || "—")} · 🏷️ ${esc(n.tag || "")}</div>
+        <div class="pendiente-item-header">
+          <div>
+            <div class="pendiente-titulo">${esc(n.titulo)}</div>
+            <div class="pendiente-meta">📅 ${esc(n.fecha)} · ✍️ ${esc(n.autor_nombre || "—")} · 🏷️ ${esc(n.tag || "")}</div>
+          </div>
+          <div class="pendiente-btns">
+            ${n.excerpt || n.contenido ? `<button class="btn-ver" onclick="togglePrevPendiente(this)">👁 Ver</button>` : ""}
+            <button class="btn-aprobar"  onclick="cambiarEstado(${n.id},'aprobada')">✅ Aprobar</button>
+            <button class="btn-rechazar" onclick="cambiarEstado(${n.id},'rechazada')">❌ Rechazar</button>
+          </div>
         </div>
-        <div class="pendiente-btns">
-          <button class="btn-aprobar" onclick="cambiarEstado(${n.id},'aprobada')">✅ Aprobar</button>
-          <button class="btn-rechazar" onclick="cambiarEstado(${n.id},'rechazada')">❌ Rechazar</button>
-        </div>
+        ${n.excerpt ? `<p class="pendiente-excerpt">${esc(n.excerpt)}</p>` : ""}
+        ${n.excerpt || n.contenido ? `
+        <div class="pendiente-preview">
+          ${n.contenido
+            ? `<div class="pendiente-contenido">${esc(n.contenido)}</div>`
+            : `<p style="color:var(--gris);font-style:italic;font-size:.85rem">Sin cuerpo extendido.</p>`}
+        </div>` : ""}
       </div>`).join("");
   } catch {
     lista.innerHTML = '<p style="color:#b91c1c">Error al cargar pendientes.</p>';
   }
+}
+
+function togglePrevPendiente(btn) {
+  const item = btn.closest(".pendiente-item");
+  const prev = item.querySelector(".pendiente-preview");
+  const open = prev.classList.toggle("open");
+  btn.textContent = open ? "👁 Ocultar" : "👁 Ver";
 }
 
 async function cambiarEstado(id, estado) {

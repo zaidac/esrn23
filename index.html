@@ -1605,6 +1605,7 @@
       </div>
       <div class="ap-mfield"><label>Fecha *</label><input type="text" id="ap-n-fecha" placeholder="Ej: 03/03/2025"/></div>
       <div class="ap-mfield"><label>Resumen *</label><textarea id="ap-n-excerpt" placeholder="Descripción breve de la noticia..."></textarea></div>
+      <div class="ap-mfield"><label>Contenido completo</label><textarea id="ap-n-contenido" style="min-height:160px" placeholder="Cuerpo completo del artículo (opcional)..."></textarea></div>
       <div class="ap-mfield">
         <label>Estado</label>
         <select id="ap-n-activa">
@@ -2020,7 +2021,8 @@
         document.getElementById("ap-n-tag").selectedIndex = 0;
         document.getElementById("ap-n-emoji").value     = "📰";
         document.getElementById("ap-n-fecha").value   = "";
-        document.getElementById("ap-n-excerpt").value = "";
+        document.getElementById("ap-n-excerpt").value   = "";
+        document.getElementById("ap-n-contenido").value = "";
         document.getElementById("ap-n-activa").value  = "1";
         document.getElementById("apmodal-noticia-tit").textContent = "Nueva noticia";
         apImgPendientes = [];
@@ -2068,7 +2070,8 @@
     }
     document.getElementById("ap-n-emoji").value   = n.emoji || "📰";
     document.getElementById("ap-n-fecha").value   = n.fecha;
-    document.getElementById("ap-n-excerpt").value = n.excerpt;
+    document.getElementById("ap-n-excerpt").value   = n.excerpt;
+    document.getElementById("ap-n-contenido").value = n.contenido || "";
     document.getElementById("ap-n-activa").value  = String(n.activa);
     document.getElementById("apmodal-noticia-tit").textContent = "Editar noticia";
     apImgPendientes = [];
@@ -2088,8 +2091,9 @@
       tag_id:  tagSel.value ? parseInt(tagSel.value) : undefined,
       emoji:   document.getElementById("ap-n-emoji").value.trim() || "📰",
       fecha:   document.getElementById("ap-n-fecha").value.trim(),
-      excerpt: document.getElementById("ap-n-excerpt").value.trim(),
-      activa:  parseInt(document.getElementById("ap-n-activa").value),
+      excerpt:   document.getElementById("ap-n-excerpt").value.trim(),
+      contenido: document.getElementById("ap-n-contenido").value.trim(),
+      activa:    parseInt(document.getElementById("ap-n-activa").value),
     };
     if (!body.titulo || !tagSel.value || !body.fecha || !body.excerpt) {
       apToast("Completá los campos obligatorios (*)", "err"); return;
