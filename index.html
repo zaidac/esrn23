@@ -1600,7 +1600,7 @@
       <input type="hidden" id="ap-n-id"/>
       <div class="ap-mfield"><label>Título *</label><input type="text" id="ap-n-titulo" placeholder="Ej: Inicio del ciclo lectivo 2025"/></div>
       <div class="ap-grid2">
-        <div class="ap-mfield"><label>Tag / Categoría *</label><input type="text" id="ap-n-tag" placeholder="Ej: Institucional"/></div>
+        <div class="ap-mfield"><label>Tag / Categoría *</label><select id="ap-n-tag"><option value="">Seleccioná un tag...</option></select></div>
         <div class="ap-mfield"><label>Emoji</label><input type="text" id="ap-n-emoji" placeholder="📚" maxlength="4"/></div>
       </div>
       <div class="ap-mfield"><label>Fecha *</label><input type="text" id="ap-n-fecha" placeholder="Ej: 03/03/2025"/></div>
@@ -2015,10 +2015,10 @@
   window.apOpenModal = function(tipo, reset = true) {
     if (reset) {
       if (tipo === "noticia") {
-        document.getElementById("ap-n-id").value      = "";
-        document.getElementById("ap-n-titulo").value  = "";
-        document.getElementById("ap-n-tag").value     = "";
-        document.getElementById("ap-n-emoji").value   = "📰";
+        document.getElementById("ap-n-id").value         = "";
+        document.getElementById("ap-n-titulo").value    = "";
+        document.getElementById("ap-n-tag").selectedIndex = 0;
+        document.getElementById("ap-n-emoji").value     = "📰";
         document.getElementById("ap-n-fecha").value   = "";
         document.getElementById("ap-n-excerpt").value = "";
         document.getElementById("ap-n-activa").value  = "1";
@@ -2057,7 +2057,15 @@
     if (!n) return;
     document.getElementById("ap-n-id").value      = n.id;
     document.getElementById("ap-n-titulo").value  = n.titulo;
-    document.getElementById("ap-n-tag").value     = n.tag;
+    const _tagSel = document.getElementById("ap-n-tag");
+    if (n.tag_id) {
+      _tagSel.value = n.tag_id;
+    } else {
+      const _match = Array.from(_tagSel.options).find(o =>
+        (o.dataset.nombre || "").toLowerCase() === (n.tag || "").toLowerCase()
+      );
+      _tagSel.value = _match ? _match.value : "";
+    }
     document.getElementById("ap-n-emoji").value   = n.emoji || "📰";
     document.getElementById("ap-n-fecha").value   = n.fecha;
     document.getElementById("ap-n-excerpt").value = n.excerpt;
@@ -2070,16 +2078,20 @@
   };
 
   window.apGuardarNoticia = async function() {
-    const id = document.getElementById("ap-n-id").value;
+    const id     = document.getElementById("ap-n-id").value;
+    const tagSel = document.getElementById("ap-n-tag");
+    const tagOpt = tagSel.options[tagSel.selectedIndex];
+    const tagNombre = tagOpt && tagOpt.value ? (tagOpt.dataset.nombre || tagOpt.textContent.replace(/^[\u{1F000}-\u{1FFFF}\u2600-\u27BF\s]+/u, "").trim()) : "";
     const body = {
       titulo:  document.getElementById("ap-n-titulo").value.trim(),
-      tag:     document.getElementById("ap-n-tag").value.trim(),
+      tag:     tagNombre,
+      tag_id:  tagSel.value ? parseInt(tagSel.value) : undefined,
       emoji:   document.getElementById("ap-n-emoji").value.trim() || "📰",
       fecha:   document.getElementById("ap-n-fecha").value.trim(),
       excerpt: document.getElementById("ap-n-excerpt").value.trim(),
       activa:  parseInt(document.getElementById("ap-n-activa").value),
     };
-    if (!body.titulo || !body.tag || !body.fecha || !body.excerpt) {
+    if (!body.titulo || !tagSel.value || !body.fecha || !body.excerpt) {
       apToast("Completá los campos obligatorios (*)", "err"); return;
     }
     const btn = document.getElementById("ap-btn-guardar-noticia");
@@ -2353,6 +2365,20 @@
       const data = await res.json();
       apTags = Array.isArray(data) ? data : [];
       apRenderTags();
+      // Poblar select de tag en el formulario de noticias
+      const tagSel = document.getElementById("ap-n-tag");
+      const curVal = tagSel ? tagSel.value : "";
+      if (tagSel) {
+        tagSel.innerHTML = '<option value="">Seleccioná un tag...</option>';
+        apTags.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.id;
+          opt.dataset.nombre = t.nombre;
+          opt.textContent = (t.emoji ? t.emoji + " " : "") + t.nombre;
+          tagSel.appendChild(opt);
+        });
+        if (curVal) tagSel.value = curVal;
+      }
     } catch {}
   }
 
