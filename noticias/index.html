@@ -231,7 +231,7 @@
     .pendiente-contenido .ql-align-justify { text-align: justify; }
 
     /* ── Quill Snow — overrides tema bordo/crema ── */
-    .env-quill-editor { min-height: 140px; }
+    .env-quill-editor { min-height: 240px; }
     .env-quill-editor .ql-toolbar.ql-snow {
       border: 1.5px solid #ddd6d6; border-bottom: none;
       border-radius: 8px 8px 0 0; background: var(--crema);
@@ -243,7 +243,7 @@
     }
     .env-quill-editor:focus-within .ql-toolbar.ql-snow,
     .env-quill-editor:focus-within .ql-container.ql-snow { border-color: var(--bordo); }
-    .env-quill-editor .ql-editor { min-height: 110px; line-height: 1.75; }
+    .env-quill-editor .ql-editor { min-height: 200px; line-height: 1.75; }
     .env-quill-editor .ql-editor.ql-blank::before { color: var(--gris); font-style: italic; font-size: .88rem; }
 
     .btn-ver {
@@ -351,7 +351,7 @@
 
 <!-- ── MODAL ENVIAR ARTÍCULO ── -->
 <div class="modal-overlay" id="modal-enviar">
-  <div class="modal-simple" style="max-width:580px">
+  <div class="modal-simple" style="max-width:680px">
     <h3>✍️ Enviar artículo</h3>
     <div class="field"><label>Título *</label><input type="text" id="env-titulo" placeholder="Título del artículo"/></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
@@ -404,7 +404,7 @@ const envQuillContenido = new Quill('#env-contenido-editor', {
       ['bold', 'italic', 'underline', 'strike'],
       [{ align: [] }],
       [{ list: 'ordered' }, { list: 'bullet' }],
-      ['blockquote', 'link'],
+      ['blockquote', 'link', 'image'],
       ['clean']
     ]
   }
@@ -421,7 +421,7 @@ function renderContenido(raw) {
     // Texto plano legado: convertir saltos de línea en párrafos
     return raw.split('\n').filter(Boolean).map(l => '<p>' + DOMPurify.sanitize(l) + '</p>').join('');
   }
-  return DOMPurify.sanitize(raw);
+  return DOMPurify.sanitize(raw, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'class', 'style'] });
 }
 
 // ── Estado ──────────────────────────────────────────────────

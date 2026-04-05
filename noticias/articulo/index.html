@@ -77,7 +77,7 @@
     }
 
     /* ARTICLE WRAPPER */
-    .art-wrapper { max-width: 760px; margin: 2.5rem auto 3.5rem; padding: 0 1.25rem; }
+    .art-wrapper { max-width: 1100px; margin: 2.5rem auto 3.5rem; padding: 0 1.25rem; }
     .art-card { background: var(--blanco); border-radius: 14px; box-shadow: var(--sombra); overflow: hidden; border-top: 3px solid var(--dorado); }
 
     /* FEATURED IMAGE */
@@ -152,9 +152,43 @@
     footer { background: var(--bordo-oscuro); color: rgba(255,255,255,.5); text-align: center; padding: 2rem; font-size: .83rem; }
     footer strong { color: var(--dorado); }
 
+    /* Layout dos columnas */
+    .art-body { padding: 0; }
+    .art-body-grid { display: grid; grid-template-columns: 1fr 260px; align-items: start; }
+    .art-main { padding: 2rem 2.5rem 2.5rem; min-width: 0; }
+    .art-sidebar {
+      padding: 2rem 1.75rem; border-left: 1px solid #f0ebe3;
+      background: var(--crema); border-radius: 0 0 14px 0;
+      position: sticky; top: 72px; align-self: start;
+    }
+    .art-sidebar-section { margin-bottom: 1.25rem; }
+    .art-sidebar-label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--gris); margin-bottom: .4rem; }
+    .art-sidebar-tag { display: inline-block; background: var(--bordo); color: #fff; font-size: .78rem; font-weight: 600; padding: .25rem .7rem; border-radius: 20px; }
+    .art-sidebar-meta { font-size: .85rem; color: #4a3a30; line-height: 1.85; }
+    .art-sidebar-meta strong { color: var(--bordo-oscuro); }
+    .art-sidebar-divider { height: 1px; background: #e8e0d6; margin: 1.25rem 0; }
+    .art-back-btn {
+      display: flex; align-items: center; gap: .4rem; padding: .55rem 1rem;
+      border-radius: 8px; border: 1.5px solid var(--bordo); color: var(--bordo);
+      font-size: .82rem; font-weight: 600; text-decoration: none;
+      transition: all .2s; width: 100%; justify-content: center;
+    }
+    .art-back-btn:hover { background: var(--bordo); color: #fff; }
+
+    @media (max-width: 768px) {
+      .art-body-grid { grid-template-columns: 1fr; }
+      .art-main { padding: 1.5rem 1.25rem 2rem; }
+      .art-sidebar {
+        border-left: none; border-top: 1px solid #f0ebe3;
+        border-radius: 0 0 14px 14px; position: static;
+        padding: 1.25rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+      }
+      .art-sidebar-section { margin-bottom: 0; }
+      .art-sidebar-divider { display: none; }
+      .art-back-btn { width: auto; }
+    }
     @media (max-width: 600px) {
       .nav { padding: 0 1rem; }
-      .art-body { padding: 1.25rem; }
       .hero h1 { font-size: 1.35rem; }
     }
   </style>
@@ -203,10 +237,9 @@
   function renderContenido(raw) {
     if (!raw) return '';
     if (!/<[a-z][\s\S]*>/i.test(raw)) {
-      // Texto plano legado: convertir saltos de línea en párrafos
       return raw.split('\n').filter(Boolean).map(function(l) { return '<p>' + DOMPurify.sanitize(l) + '</p>'; }).join('');
     }
-    return DOMPurify.sanitize(raw);
+    return DOMPurify.sanitize(raw, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'class', 'style'] });
   }
 
   function setTitle(t) {
@@ -274,9 +307,24 @@
     document.getElementById('art-card').innerHTML =
       imgHtml +
       `<div class="art-body">
-         ${n.tag      ? '<span class="news-tag-badge">'  + esc(n.tag)      + '</span>'        : ''}
-         ${n.excerpt  ? '<p class="art-excerpt">'        + esc(n.excerpt)  + '</p>'           : ''}
-         ${n.contenido? '<div class="art-content">'      + renderContenido(n.contenido) + '</div>' : ''}
+         <div class="art-body-grid">
+           <div class="art-main">
+             ${n.excerpt  ? '<p class="art-excerpt">'   + esc(n.excerpt)  + '</p>'                        : ''}
+             ${n.contenido? '<div class="art-content">' + renderContenido(n.contenido) + '</div>' : ''}
+           </div>
+           <aside class="art-sidebar">
+             ${n.tag ? '<div class="art-sidebar-section"><div class="art-sidebar-label">Sección</div><span class="art-sidebar-tag">' + esc(n.tag) + '</span></div>' : ''}
+             <div class="art-sidebar-section">
+               <div class="art-sidebar-label">Publicado</div>
+               <div class="art-sidebar-meta">
+                 ${n.fecha        ? '<strong>📅</strong> ' + esc(n.fecha) + '<br/>'      : ''}
+                 ${n.autor_nombre ? '<strong>✍️</strong> ' + esc(n.autor_nombre)         : ''}
+               </div>
+             </div>
+             <div class="art-sidebar-divider"></div>
+             <a href="../" class="art-back-btn">← Noticias</a>
+           </aside>
+         </div>
        </div>`;
 
     if (imgs && imgs.length > 1) setupCarousel(cid, imgs.length);

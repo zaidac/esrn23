@@ -1450,7 +1450,7 @@
   #apmodal-noticia .ap-modal { max-width: 660px; }
 
   /* ── Quill Snow — overrides para tema bordo/crema ── */
-  .ap-quill-editor { min-height: 160px; }
+  .ap-quill-editor { min-height: 260px; }
   .ql-toolbar.ql-snow {
     border: 1.5px solid #ddd6d6; border-bottom: none;
     border-radius: 8px 8px 0 0; background: var(--crema);
@@ -1462,7 +1462,7 @@
   }
   .ap-quill-editor:focus-within .ql-toolbar.ql-snow,
   .ap-quill-editor:focus-within .ql-container.ql-snow { border-color: var(--bordo); }
-  .ql-editor { min-height: 120px; line-height: 1.75; }
+  .ql-editor { min-height: 220px; line-height: 1.75; }
   .ql-snow .ql-stroke { stroke: var(--bordo-oscuro); }
   .ql-snow .ql-fill  { fill:   var(--bordo-oscuro); }
   .ql-snow .ql-picker { color: var(--bordo-oscuro); }
@@ -2614,7 +2614,7 @@
         ['bold', 'italic', 'underline', 'strike'],
         [{ align: [] }],
         [{ list: 'ordered' }, { list: 'bullet' }],
-        ['blockquote', 'link'],
+        ['blockquote', 'link', 'image'],
         ['clean']
       ]
     }
@@ -2631,7 +2631,7 @@
       // Texto plano legado: convertir saltos de línea en párrafos
       return raw.split('\n').filter(Boolean).map(l => '<p>' + DOMPurify.sanitize(l) + '</p>').join('');
     }
-    return DOMPurify.sanitize(raw);
+    return DOMPurify.sanitize(raw, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'class', 'style'] });
   }
 
 })();
