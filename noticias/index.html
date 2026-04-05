@@ -231,7 +231,7 @@
     .pendiente-contenido .ql-align-justify { text-align: justify; }
 
     /* ── Quill Snow — overrides tema bordo/crema ── */
-    .env-quill-editor { min-height: 240px; }
+    .env-quill-editor { min-height: 340px; }
     .env-quill-editor .ql-toolbar.ql-snow {
       border: 1.5px solid #ddd6d6; border-bottom: none;
       border-radius: 8px 8px 0 0; background: var(--crema);
@@ -243,8 +243,20 @@
     }
     .env-quill-editor:focus-within .ql-toolbar.ql-snow,
     .env-quill-editor:focus-within .ql-container.ql-snow { border-color: var(--bordo); }
-    .env-quill-editor .ql-editor { min-height: 200px; line-height: 1.75; }
+    .env-quill-editor .ql-editor { min-height: 290px; line-height: 1.75; }
     .env-quill-editor .ql-editor.ql-blank::before { color: var(--gris); font-style: italic; font-size: .88rem; }
+    .ql-img-sel { outline: 2.5px solid var(--bordo); outline-offset: 2px; cursor: pointer; }
+    .ql-img-controls {
+      display: none; flex-wrap: wrap; gap: .3rem; align-items: center;
+      background: var(--crema); border: 1.5px solid var(--bordo);
+      border-top: none; border-radius: 0 0 8px 8px;
+      padding: .4rem .6rem; font-size: .78rem;
+    }
+    .ql-img-ctrl-lbl { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--gris); margin-right: .15rem; }
+    .ql-img-tb-btn { padding: .22rem .55rem; border-radius: 5px; border: 1.5px solid #ddd6d6; background: #fff; color: var(--bordo-oscuro); cursor: pointer; font-size: .75rem; font-weight: 600; transition: all .15s; }
+    .ql-img-tb-btn:hover, .ql-img-tb-btn.active { background: var(--bordo); color: #fff; border-color: var(--bordo); }
+    .ql-img-tb-btn.del:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .ql-img-tb-sep { width: 1px; height: 16px; background: #ddd6d6; margin: 0 .2rem; align-self: center; }
 
     .btn-ver {
       padding: .3rem .75rem; border-radius: 6px; border: 1.5px solid var(--bordo);
@@ -366,6 +378,20 @@
     <div class="field">
       <label>Contenido completo</label>
       <div id="env-contenido-editor" class="env-quill-editor"></div>
+      <div id="env-img-controls" class="ql-img-controls">
+        <span class="ql-img-ctrl-lbl">Tamaño:</span>
+        <button class="ql-img-tb-btn" data-w="25">25%</button>
+        <button class="ql-img-tb-btn" data-w="50">50%</button>
+        <button class="ql-img-tb-btn" data-w="75">75%</button>
+        <button class="ql-img-tb-btn" data-w="100">100%</button>
+        <div class="ql-img-tb-sep"></div>
+        <span class="ql-img-ctrl-lbl">Posición:</span>
+        <button class="ql-img-tb-btn" data-align="left">⬅ Izq.</button>
+        <button class="ql-img-tb-btn" data-align="center">■ Centro</button>
+        <button class="ql-img-tb-btn" data-align="right">Dcha. ➡</button>
+        <div class="ql-img-tb-sep"></div>
+        <button class="ql-img-tb-btn del" data-action="delete">🗑 Quitar</button>
+      </div>
     </div>
     <p class="error-msg" id="env-error" style="display:none"></p>
     <div class="modal-btns">
@@ -394,6 +420,29 @@
 <script>
 const API = "https://esrn23-backend.onrender.com";
 
+// ── Blot de imagen con soporte para style (preserva tamaño/posición) ──
+(function() {
+  const BaseImg = Quill.import('formats/image');
+  class StyledImage extends BaseImg {
+    static create(val) {
+      const src = typeof val === 'string' ? val : (val && val.src ? val.src : val);
+      const node = super.create(src);
+      if (val && typeof val === 'object' && val.style) node.setAttribute('style', val.style);
+      if (!node.style.maxWidth) node.style.maxWidth = '100%';
+      return node;
+    }
+    static value(node) {
+      const v = { src: node.getAttribute('src') };
+      const s = node.getAttribute('style');
+      if (s) v.style = s;
+      return v;
+    }
+  }
+  StyledImage.blotName = 'image';
+  StyledImage.tagName = 'IMG';
+  Quill.register(StyledImage, true);
+})();
+
 // ── Quill editor — "Contenido completo" ─────────────────────
 const envQuillContenido = new Quill('#env-contenido-editor', {
   theme: 'snow',
@@ -409,6 +458,94 @@ const envQuillContenido = new Quill('#env-contenido-editor', {
     ]
   }
 });
+
+function compressImg(file, maxPx, quality, cb) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      let w = img.width, h = img.height;
+      if (w > maxPx || h > maxPx) {
+        if (w >= h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else        { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Handler: file picker → comprimir → embed inline
+envQuillContenido.getModule('toolbar').addHandler('image', function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.click();
+  input.onchange = function() {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Imagen demasiado grande (máx. 10 MB)'); return;
+    }
+    compressImg(file, 1000, 0.78, function(dataUrl) {
+      const range = envQuillContenido.getSelection(true);
+      envQuillContenido.insertEmbed(range ? range.index : 0, 'image', dataUrl, 'user');
+      envQuillContenido.setSelection((range ? range.index : 0) + 1);
+    });
+  };
+});
+
+function setupImgControls(q, ctrlId) {
+  const ctrl = document.getElementById(ctrlId);
+  if (!ctrl) return;
+  let sel = null;
+  q.root.addEventListener('click', function(e) {
+    if (e.target.tagName === 'IMG') {
+      if (sel) sel.classList.remove('ql-img-sel');
+      sel = e.target; sel.classList.add('ql-img-sel');
+      ctrl.style.display = 'flex';
+      ctrl.querySelectorAll('[data-w]').forEach(function(b) {
+        b.classList.toggle('active', sel.style.width === b.dataset.w + '%');
+      });
+    } else {
+      if (sel) sel.classList.remove('ql-img-sel');
+      sel = null; ctrl.style.display = 'none';
+    }
+  });
+  ctrl.addEventListener('mousedown', function(e) { e.preventDefault(); });
+  ctrl.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-w],[data-align],[data-action]');
+    if (!btn || !sel) return;
+    if (btn.dataset.w) {
+      sel.style.width = btn.dataset.w + '%'; sel.style.maxWidth = '100%';
+      ctrl.querySelectorAll('[data-w]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    }
+    if (btn.dataset.align === 'left') {
+      sel.style.cssFloat = 'left'; sel.style.display = 'inline'; sel.style.margin = '.25rem 1rem .5rem 0';
+    } else if (btn.dataset.align === 'center') {
+      sel.style.cssFloat = ''; sel.style.display = 'block'; sel.style.margin = '.75rem auto';
+    } else if (btn.dataset.align === 'right') {
+      sel.style.cssFloat = 'right'; sel.style.display = 'inline'; sel.style.margin = '.25rem 0 .5rem 1rem';
+    }
+    if (btn.dataset.align) {
+      ctrl.querySelectorAll('[data-align]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    }
+    if (btn.dataset.action === 'delete') { sel.remove(); sel = null; ctrl.style.display = 'none'; }
+  });
+  document.addEventListener('click', function(e) {
+    if (!q.root.contains(e.target) && !ctrl.contains(e.target)) {
+      if (sel) sel.classList.remove('ql-img-sel');
+      sel = null; ctrl.style.display = 'none';
+    }
+  });
+}
+setupImgControls(envQuillContenido, 'env-img-controls');
 
 function getQuillHTML(q) {
   const html = q.root.innerHTML;
