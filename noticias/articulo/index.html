@@ -314,6 +314,7 @@
            </div>
            <aside class="art-sidebar">
              ${n.tag ? '<div class="art-sidebar-section"><div class="art-sidebar-label">Sección</div><span class="art-sidebar-tag">' + esc(n.tag) + '</span></div>' : ''}
+             ${(n.tags_extra && n.tags_extra.length) ? '<div class="art-sidebar-section"><div class="art-sidebar-label">Tags</div><div style="display:flex;flex-wrap:wrap;gap:4px">' + n.tags_extra.map(t => '<span class="art-sidebar-tag" style="background:' + esc(t.color||'#6b1a2a') + ';font-size:.74rem">' + esc((t.emoji||'') + ' ' + t.nombre) + '</span>').join('') + '</div></div>' : ''}
              ${n.area_nombre ? '<div class="art-sidebar-section"><div class="art-sidebar-label">Área</div><span class="art-sidebar-tag" style="background:var(--dorado);color:#3a2800">' + esc((n.area_emoji||'') + ' ' + n.area_nombre) + '</span></div>' : ''}
              <div class="art-sidebar-section">
                <div class="art-sidebar-label">Publicado</div>

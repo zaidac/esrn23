@@ -1657,8 +1657,12 @@
       <input type="hidden" id="ap-n-id"/>
       <div class="ap-mfield"><label>Título *</label><input type="text" id="ap-n-titulo" placeholder="Ej: Inicio del ciclo lectivo 2025"/></div>
       <div class="ap-grid2">
-        <div class="ap-mfield"><label>Tag / Categoría *</label><select id="ap-n-tag"><option value="">Seleccioná un tag...</option></select></div>
+        <div class="ap-mfield"><label>Tag principal *</label><select id="ap-n-tag"><option value="">Seleccioná un tag...</option></select></div>
         <div class="ap-mfield"><label>Emoji</label><input type="text" id="ap-n-emoji" placeholder="📚" maxlength="4"/></div>
+      </div>
+      <div class="ap-mfield">
+        <label>Tags adicionales</label>
+        <div id="ap-n-tags-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3;font-size:.85rem"></div>
       </div>
       <div class="ap-mfield"><label>Fecha *</label><input type="text" id="ap-n-fecha" placeholder="Ej: 03/03/2025"/></div>
       <div class="ap-mfield"><label>Resumen *</label><textarea id="ap-n-excerpt" placeholder="Descripción breve de la noticia..."></textarea></div>
@@ -1788,7 +1792,7 @@
   </div>
 </div>
 
-<!-- MODAL USUARIO -->
+<!-- MODAL USUARIO (crear) -->
 <div class="ap-modal-overlay" id="apmodal-usuario">
   <div class="ap-modal">
     <div class="ap-modal-hdr">
@@ -1807,16 +1811,45 @@
         </div>
       </div>
       <div class="ap-mfield" id="ap-u-area-row" style="display:none">
-        <label>Área asignada</label>
-        <select id="ap-u-area">
-          <option value="">Sin área asignada</option>
-        </select>
+        <label>Áreas asignadas</label>
+        <div id="ap-u-areas-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:180px;overflow-y:auto;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3"></div>
       </div>
       <div class="ap-mfield"><label>Contraseña *</label><input type="password" id="ap-u-pass" placeholder="Mínimo 6 caracteres"/></div>
     </div>
     <div class="ap-modal-ftr">
       <button type="button" class="ap-btn ap-btn-ghost" onclick="apCloseModal('usuario')">Cancelar</button>
       <button type="button" class="ap-btn ap-btn-primary" onclick="apGuardarUsuario()">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR USUARIO -->
+<div class="ap-modal-overlay" id="apmodal-editar-usuario">
+  <div class="ap-modal">
+    <div class="ap-modal-hdr">
+      <h4>Editar usuario</h4>
+      <button type="button" class="ap-modal-close" onclick="apCloseModal('editar-usuario')">×</button>
+    </div>
+    <div class="ap-modal-body">
+      <input type="hidden" id="ap-eu-id"/>
+      <div class="ap-mfield"><label>Nombre completo *</label><input type="text" id="ap-eu-nombre" placeholder="Ej: Ana García"/></div>
+      <div class="ap-grid2">
+        <div class="ap-mfield"><label>Usuario *</label><input type="text" id="ap-eu-username" placeholder="ana.garcia"/></div>
+        <div class="ap-mfield"><label>Rol *</label>
+          <select id="ap-eu-rol" onchange="apToggleAreaFieldEdit()">
+            <option value="estudiante">👨‍🎓 Estudiante</option>
+            <option value="profesor">👩‍🏫 Profesor/a</option>
+          </select>
+        </div>
+      </div>
+      <div class="ap-mfield" id="ap-eu-area-row" style="display:none">
+        <label>Áreas asignadas</label>
+        <div id="ap-eu-areas-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:180px;overflow-y:auto;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3"></div>
+      </div>
+    </div>
+    <div class="ap-modal-ftr">
+      <button type="button" class="ap-btn ap-btn-ghost" onclick="apCloseModal('editar-usuario')">Cancelar</button>
+      <button type="button" class="ap-btn ap-btn-primary" onclick="apGuardarEditarUsuario()">Guardar cambios</button>
     </div>
   </div>
 </div>
@@ -2120,11 +2153,13 @@
         document.getElementById("ap-n-titulo").value    = "";
         document.getElementById("ap-n-tag").selectedIndex = 0;
         document.getElementById("ap-n-emoji").value     = "📰";
-        document.getElementById("ap-n-fecha").value   = "";
+        const _hoy = new Date();
+        document.getElementById("ap-n-fecha").value = String(_hoy.getDate()).padStart(2,'0') + '/' + String(_hoy.getMonth()+1).padStart(2,'0') + '/' + _hoy.getFullYear();
         document.getElementById("ap-n-excerpt").value   = "";
         apQuillContenido.setContents([]);
         document.getElementById("ap-n-activa").value  = "1";
         document.getElementById("apmodal-noticia-tit").textContent = "Nueva noticia";
+        apRenderTagsCheckboxes("ap-n-tags-cb");
         apImgPendientes = [];
         apImgRender();
         apImgSetupInput();
@@ -2142,14 +2177,7 @@
         document.getElementById("ap-u-pass").value     = "";
         document.getElementById("ap-u-rol").value      = "estudiante";
         document.getElementById("ap-u-area-row").style.display = "none";
-        const areaSelect = document.getElementById("ap-u-area");
-        areaSelect.innerHTML = '<option value="">Sin área asignada</option>';
-        apAreas.forEach(a => {
-          const opt = document.createElement("option");
-          opt.value = a.id;
-          opt.textContent = (a.emoji || "📚") + " " + a.nombre;
-          areaSelect.appendChild(opt);
-        });
+        apRenderAreaCheckboxes("ap-u-areas-cb");
       } else if (tipo === "area") {
         document.getElementById("ap-ar-id").value    = "";
         document.getElementById("ap-ar-nombre").value= "";
@@ -2188,6 +2216,9 @@
     apQuillContenido.root.innerHTML = n.contenido || '';
     document.getElementById("ap-n-activa").value  = String(n.activa);
     document.getElementById("apmodal-noticia-tit").textContent = "Editar noticia";
+    // Marcar tags extra existentes
+    const existingTagIds = (n.tags_extra || []).map(t => t.id);
+    apRenderTagsCheckboxes("ap-n-tags-cb", existingTagIds);
     apImgPendientes = [];
     apOpenModal("noticia", false);
     apImgSetupInput();
@@ -2199,10 +2230,12 @@
     const tagSel = document.getElementById("ap-n-tag");
     const tagOpt = tagSel.options[tagSel.selectedIndex];
     const tagNombre = tagOpt && tagOpt.value ? (tagOpt.dataset.nombre || tagOpt.textContent.replace(/^[\u{1F000}-\u{1FFFF}\u2600-\u27BF\s]+/u, "").trim()) : "";
+    const tag_ids = apGetCheckedTagIds("ap-n-tags-cb");
     const body = {
       titulo:  document.getElementById("ap-n-titulo").value.trim(),
       tag:     tagNombre,
       tag_id:  tagSel.value ? parseInt(tagSel.value) : undefined,
+      tag_ids,
       emoji:   document.getElementById("ap-n-emoji").value.trim() || "📰",
       fecha:   document.getElementById("ap-n-fecha").value.trim(),
       excerpt:   document.getElementById("ap-n-excerpt").value.trim(),
@@ -2480,6 +2513,23 @@
   // ── TAGS ───────────────────────────────────────────────
   let apTags = [];
 
+  function apRenderTagsCheckboxes(containerId, checkedIds = []) {
+    const cb = document.getElementById(containerId);
+    if (!cb) return;
+    cb.innerHTML = apTags.map(t => `
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 0">
+        <input type="checkbox" name="${containerId}-tag" value="${t.id}"
+          ${checkedIds.includes(t.id) ? "checked" : ""}
+          style="accent-color:var(--bordo);width:14px;height:14px"/>
+        <span>${t.emoji || "🏷️"} ${esc(t.nombre)}</span>
+      </label>`).join("");
+  }
+
+  function apGetCheckedTagIds(containerId) {
+    return Array.from(document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`))
+      .map(el => parseInt(el.value));
+  }
+
   async function apCargarTags() {
     try {
       const res = await fetch(API + "/tags");
@@ -2500,6 +2550,8 @@
         });
         if (curVal) tagSel.value = curVal;
       }
+      // Poblar checkboxes de tags adicionales
+      apRenderTagsCheckboxes("ap-n-tags-cb");
     } catch {}
   }
 
@@ -2587,21 +2639,22 @@
       return;
     }
     tb.innerHTML = apUsuarios.map(u => {
-      const areaNombre = u.area_id
-        ? (apAreas.find(a => a.id === u.area_id)?.nombre || '—')
-        : '—';
+      const ids = Array.isArray(u.area_ids_list) ? u.area_ids_list : [];
+      const areaNames = ids.map(id => apAreas.find(a => a.id === id)?.nombre).filter(Boolean);
+      const areasText = areaNames.length ? areaNames.join(", ") : "Sin área";
       return `
       <tr>
         <td><span class="ap-badge-tag">${u.rol === "profesor" ? "👩‍🏫 Profesor" : "👨‍🎓 Estudiante"}</span></td>
         <td>
           <strong style="color:var(--bordo-oscuro)">${esc(u.nombre)}</strong>
-          ${u.rol === "profesor" ? `<div style="font-size:.75rem;color:var(--gris);margin-top:2px">🏫 ${esc(areaNombre)}</div>` : ''}
+          ${u.rol === "profesor" ? `<div style="font-size:.75rem;color:var(--gris);margin-top:2px">🏫 ${esc(areasText)}</div>` : ''}
         </td>
         <td style="color:var(--gris);font-size:.83rem">${esc(u.username)}</td>
         <td>${u.activa
           ? '<span class="ap-badge-on">Activo</span>'
           : '<span class="ap-badge-off">Inactivo</span>'}</td>
         <td><div class="ap-actions">
+          <button type="button" class="ap-btn ap-btn-ghost" onclick="apEditUsuario(${u.id})">✏️</button>
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apCambiarPassUsuario(${u.id},'${esc(u.nombre)}')">🔑</button>
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apToggleUsuario(${u.id})">${u.activa ? "Desactivar" : "Activar"}</button>
           <button type="button" class="ap-btn ap-btn-danger" onclick="apDelUsuario(${u.id})">🗑️</button>
@@ -2610,22 +2663,44 @@
     }).join("");
   }
 
+  function apRenderAreaCheckboxes(containerId, checkedIds = []) {
+    const cb = document.getElementById(containerId);
+    if (!cb) return;
+    cb.innerHTML = apAreas.map(a => `
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 0">
+        <input type="checkbox" name="${containerId}-area" value="${a.id}"
+          ${checkedIds.includes(a.id) ? "checked" : ""}
+          style="accent-color:var(--bordo);width:14px;height:14px"/>
+        <span>${a.emoji || "📚"} ${esc(a.nombre)}</span>
+      </label>`).join("");
+  }
+
+  function apGetCheckedAreaIds(containerId) {
+    return Array.from(document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`))
+      .map(el => parseInt(el.value));
+  }
+
   window.apToggleAreaField = function() {
     const rol = document.getElementById("ap-u-rol").value;
     const row = document.getElementById("ap-u-area-row");
     row.style.display = rol === "profesor" ? "block" : "none";
-    if (rol !== "profesor") document.getElementById("ap-u-area").value = "";
+  };
+
+  window.apToggleAreaFieldEdit = function() {
+    const rol = document.getElementById("ap-eu-rol").value;
+    const row = document.getElementById("ap-eu-area-row");
+    row.style.display = rol === "profesor" ? "block" : "none";
   };
 
   window.apGuardarUsuario = async function() {
-    const rol    = document.getElementById("ap-u-rol").value;
-    const areaEl = document.getElementById("ap-u-area");
+    const rol = document.getElementById("ap-u-rol").value;
+    const area_ids = rol === "profesor" ? apGetCheckedAreaIds("ap-u-areas-cb") : [];
     const body = {
       nombre:   document.getElementById("ap-u-nombre").value.trim(),
       username: document.getElementById("ap-u-username").value.trim(),
       rol,
       password: document.getElementById("ap-u-pass").value,
-      area_id:  (rol === "profesor" && areaEl.value) ? parseInt(areaEl.value) : null,
+      area_ids,
     };
     if (!body.nombre || !body.username || !body.password) { apToast("Completá todos los campos", "err"); return; }
     if (body.password.length < 6) { apToast("La contraseña debe tener al menos 6 caracteres", "err"); return; }
@@ -2637,11 +2712,44 @@
       }
       apToast("Usuario creado ✅", "ok");
       apCloseModal("usuario");
-      ["ap-u-nombre","ap-u-username","ap-u-pass"].forEach(id => document.getElementById(id).value = "");
-      document.getElementById("ap-u-area").value = "";
-      document.getElementById("ap-u-area-row").style.display = "none";
       await apCargarUsuarios();
     } catch(e) { apToast(e.message || "Error al crear usuario", "err"); }
+  };
+
+  window.apEditUsuario = function(id) {
+    const u = apUsuarios.find(x => x.id === id);
+    if (!u) return;
+    document.getElementById("ap-eu-id").value       = u.id;
+    document.getElementById("ap-eu-nombre").value   = u.nombre;
+    document.getElementById("ap-eu-username").value = u.username;
+    document.getElementById("ap-eu-rol").value      = u.rol;
+    const checkedIds = Array.isArray(u.area_ids_list) ? u.area_ids_list : [];
+    apRenderAreaCheckboxes("ap-eu-areas-cb", checkedIds);
+    document.getElementById("ap-eu-area-row").style.display = u.rol === "profesor" ? "block" : "none";
+    apOpenModal("editar-usuario");
+  };
+
+  window.apGuardarEditarUsuario = async function() {
+    const id  = document.getElementById("ap-eu-id").value;
+    const rol = document.getElementById("ap-eu-rol").value;
+    const area_ids = rol === "profesor" ? apGetCheckedAreaIds("ap-eu-areas-cb") : [];
+    const body = {
+      nombre:   document.getElementById("ap-eu-nombre").value.trim(),
+      username: document.getElementById("ap-eu-username").value.trim(),
+      rol,
+      area_ids,
+    };
+    if (!body.nombre || !body.username) { apToast("Completá todos los campos", "err"); return; }
+    try {
+      const res = await apFetch("PUT", "/usuarios/" + id, body);
+      if (!res || !res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Error al guardar");
+      }
+      apToast("Usuario actualizado ✅", "ok");
+      apCloseModal("editar-usuario");
+      await apCargarUsuarios();
+    } catch(e) { apToast(e.message || "Error al guardar usuario", "err"); }
   };
 
   window.apCambiarPassUsuario = function(id, nombre) {
