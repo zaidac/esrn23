@@ -1656,13 +1656,10 @@
     <div class="ap-modal-body">
       <input type="hidden" id="ap-n-id"/>
       <div class="ap-mfield"><label>Título *</label><input type="text" id="ap-n-titulo" placeholder="Ej: Inicio del ciclo lectivo 2025"/></div>
-      <div class="ap-grid2">
-        <div class="ap-mfield"><label>Tag principal *</label><select id="ap-n-tag"><option value="">Seleccioná un tag...</option></select></div>
-        <div class="ap-mfield"><label>Emoji</label><input type="text" id="ap-n-emoji" placeholder="📚" maxlength="4"/></div>
-      </div>
+      <div class="ap-mfield"><label>Emoji</label><input type="text" id="ap-n-emoji" placeholder="📚" maxlength="4"/></div>
       <div class="ap-mfield">
-        <label>Tags adicionales</label>
-        <div id="ap-n-tags-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3;font-size:.85rem"></div>
+        <label>Tags * <span style="font-weight:400;color:var(--gris)">(seleccioná al menos uno)</span></label>
+        <div id="ap-n-tags-cb" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3;font-size:.85rem"></div>
       </div>
       <div class="ap-mfield"><label>Fecha *</label><input type="text" id="ap-n-fecha" placeholder="Ej: 03/03/2025"/></div>
       <div class="ap-mfield"><label>Resumen *</label><textarea id="ap-n-excerpt" placeholder="Descripción breve de la noticia..."></textarea></div>
@@ -2151,7 +2148,6 @@
       if (tipo === "noticia") {
         document.getElementById("ap-n-id").value         = "";
         document.getElementById("ap-n-titulo").value    = "";
-        document.getElementById("ap-n-tag").selectedIndex = 0;
         document.getElementById("ap-n-emoji").value     = "📰";
         const _hoy = new Date();
         document.getElementById("ap-n-fecha").value = String(_hoy.getDate()).padStart(2,'0') + '/' + String(_hoy.getMonth()+1).padStart(2,'0') + '/' + _hoy.getFullYear();
@@ -2199,26 +2195,19 @@
   window.apEditNoticia = function(id) {
     const n = apNoticias.find(x => x.id === id);
     if (!n) return;
-    document.getElementById("ap-n-id").value      = n.id;
-    document.getElementById("ap-n-titulo").value  = n.titulo;
-    const _tagSel = document.getElementById("ap-n-tag");
-    if (n.tag_id) {
-      _tagSel.value = n.tag_id;
-    } else {
-      const _match = Array.from(_tagSel.options).find(o =>
-        (o.dataset.nombre || "").toLowerCase() === (n.tag || "").toLowerCase()
-      );
-      _tagSel.value = _match ? _match.value : "";
-    }
-    document.getElementById("ap-n-emoji").value   = n.emoji || "📰";
-    document.getElementById("ap-n-fecha").value   = n.fecha;
+    document.getElementById("ap-n-id").value        = n.id;
+    document.getElementById("ap-n-titulo").value    = n.titulo;
+    document.getElementById("ap-n-emoji").value     = n.emoji || "📰";
+    document.getElementById("ap-n-fecha").value     = n.fecha;
     document.getElementById("ap-n-excerpt").value   = n.excerpt;
     apQuillContenido.root.innerHTML = n.contenido || '';
-    document.getElementById("ap-n-activa").value  = String(n.activa);
+    document.getElementById("ap-n-activa").value    = String(n.activa);
     document.getElementById("apmodal-noticia-tit").textContent = "Editar noticia";
-    // Marcar tags extra existentes
-    const existingTagIds = (n.tags_extra || []).map(t => t.id);
-    apRenderTagsCheckboxes("ap-n-tags-cb", existingTagIds);
+    // Marcar tag principal + tags extra en checkboxes
+    const checkedIds = [];
+    if (n.tag_id) checkedIds.push(n.tag_id);
+    (n.tags_extra || []).forEach(t => { if (!checkedIds.includes(t.id)) checkedIds.push(t.id); });
+    apRenderTagsCheckboxes("ap-n-tags-cb", checkedIds);
     apImgPendientes = [];
     apOpenModal("noticia", false);
     apImgSetupInput();
@@ -2226,24 +2215,22 @@
   };
 
   window.apGuardarNoticia = async function() {
-    const id     = document.getElementById("ap-n-id").value;
-    const tagSel = document.getElementById("ap-n-tag");
-    const tagOpt = tagSel.options[tagSel.selectedIndex];
-    const tagNombre = tagOpt && tagOpt.value ? (tagOpt.dataset.nombre || tagOpt.textContent.replace(/^[\u{1F000}-\u{1FFFF}\u2600-\u27BF\s]+/u, "").trim()) : "";
-    const tag_ids = apGetCheckedTagIds("ap-n-tags-cb");
+    const id       = document.getElementById("ap-n-id").value;
+    const tag_ids  = apGetCheckedTagIds("ap-n-tags-cb");
+    const firstTag = apTags.find(t => t.id === tag_ids[0]);
     const body = {
-      titulo:  document.getElementById("ap-n-titulo").value.trim(),
-      tag:     tagNombre,
-      tag_id:  tagSel.value ? parseInt(tagSel.value) : undefined,
+      titulo:    document.getElementById("ap-n-titulo").value.trim(),
+      tag:       firstTag ? firstTag.nombre : "",
+      tag_id:    firstTag ? firstTag.id : undefined,
       tag_ids,
-      emoji:   document.getElementById("ap-n-emoji").value.trim() || "📰",
-      fecha:   document.getElementById("ap-n-fecha").value.trim(),
+      emoji:     document.getElementById("ap-n-emoji").value.trim() || "📰",
+      fecha:     document.getElementById("ap-n-fecha").value.trim(),
       excerpt:   document.getElementById("ap-n-excerpt").value.trim(),
       contenido: getQuillHTML(apQuillContenido),
       activa:    parseInt(document.getElementById("ap-n-activa").value),
     };
-    if (!body.titulo || !tagSel.value || !body.fecha || !body.excerpt) {
-      apToast("Completá los campos obligatorios (*)", "err"); return;
+    if (!body.titulo || !tag_ids.length || !body.fecha || !body.excerpt) {
+      apToast(!tag_ids.length ? "Seleccioná al menos un tag" : "Completá los campos obligatorios (*)", "err"); return;
     }
     const btn = document.getElementById("ap-btn-guardar-noticia");
     btn.disabled = true;
@@ -2385,6 +2372,8 @@
       const data = await res.json();
       apAreas = Array.isArray(data) ? data : [];
       apRenderAreas();
+      // Si los usuarios ya cargaron, re-renderizarlos con las áreas resueltas
+      if (apUsuarios.length) apRenderUsuarios();
     } catch {}
   }
 
@@ -2536,21 +2525,7 @@
       const data = await res.json();
       apTags = Array.isArray(data) ? data : [];
       apRenderTags();
-      // Poblar select de tag en el formulario de noticias
-      const tagSel = document.getElementById("ap-n-tag");
-      const curVal = tagSel ? tagSel.value : "";
-      if (tagSel) {
-        tagSel.innerHTML = '<option value="">Seleccioná un tag...</option>';
-        apTags.forEach(t => {
-          const opt = document.createElement("option");
-          opt.value = t.id;
-          opt.dataset.nombre = t.nombre;
-          opt.textContent = (t.emoji ? t.emoji + " " : "") + t.nombre;
-          tagSel.appendChild(opt);
-        });
-        if (curVal) tagSel.value = curVal;
-      }
-      // Poblar checkboxes de tags adicionales
+      // Poblar checkboxes de tags
       apRenderTagsCheckboxes("ap-n-tags-cb");
     } catch {}
   }
