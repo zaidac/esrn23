@@ -366,10 +366,15 @@
   <div class="modal-simple" style="max-width:680px">
     <h3>✍️ Enviar artículo</h3>
     <div class="field"><label>Título *</label><input type="text" id="env-titulo" placeholder="Título del artículo"/></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
       <div class="field"><label>Tag *</label>
         <select id="env-tag">
           <option value="">Seleccioná un tag...</option>
+        </select>
+      </div>
+      <div class="field"><label>Área *</label>
+        <select id="env-area">
+          <option value="">Seleccioná un área...</option>
         </select>
       </div>
       <div class="field"><label>Fecha *</label><input type="text" id="env-fecha" placeholder="DD/MM/AAAA"/></div>
@@ -412,6 +417,55 @@
       <button class="btn-ghost" style="flex:1" onclick="cerrarModal('modal-pendientes')">Cerrar</button>
     </div>
   </div>
+
+<!-- ── MODAL RECHAZAR ── -->
+<div class="modal-overlay" id="modal-rechazar">
+  <div class="modal-simple" style="max-width:440px">
+    <h3>❌ Rechazar artículo</h3>
+    <input type="hidden" id="rech-id"/>
+    <div class="field">
+      <label>Motivo (opcional)</label>
+      <textarea id="rech-motivo" placeholder="Explicá al estudiante por qué se rechaza..." style="min-height:90px"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="cerrarModal('modal-rechazar')">Cancelar</button>
+      <button class="btn-primary" style="background:#b91c1c;border-color:#b91c1c" onclick="confirmarRechazo()">Rechazar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL MIS ENVÍOS (ESTUDIANTE) ── -->
+<div class="modal-overlay" id="modal-mis-envios">
+  <div class="modal-simple" style="max-width:600px">
+    <h3>📄 Mis envíos</h3>
+    <div id="mis-envios-list">
+      <p style="color:var(--gris);font-style:italic">Cargando...</p>
+    </div>
+    <div class="modal-btns" style="margin-top:1.25rem">
+      <button class="btn-ghost" style="flex:1" onclick="cerrarModal('modal-mis-envios')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CAMBIAR CONTRASEÑA (USUARIO) ── -->
+<div class="modal-overlay" id="modal-cambiar-pass">
+  <div class="modal-simple" style="max-width:400px">
+    <h3>🔑 Cambiar contraseña</h3>
+    <div class="field">
+      <label>Contraseña actual *</label>
+      <input type="password" id="ucp-actual" placeholder="Tu contraseña actual"/>
+    </div>
+    <div class="field">
+      <label>Nueva contraseña *</label>
+      <input type="password" id="ucp-nueva" placeholder="Mínimo 6 caracteres"/>
+    </div>
+    <p class="error-msg" id="ucp-error" style="display:none"></p>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="cerrarModal('modal-cambiar-pass')">Cancelar</button>
+      <button class="btn-primary" onclick="guardarCambioPass()">Guardar</button>
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- ── TOAST ── -->
@@ -619,7 +673,9 @@ function renderNavUsuario() {
       <span class="nav-user-name">👤 ${esc(usuarioNombre)}</span>
       ${esProf
         ? `<button class="btn-login btn-revisar" onclick="abrirPendientes()">📋 Revisar pendientes</button>`
-        : `<button class="btn-enviar" onclick="abrirModalEnviar()">✍️ Enviar artículo</button>`}
+        : `<button class="btn-enviar" onclick="abrirModalEnviar()">✍️ Enviar artículo</button>
+           <button class="btn-login" onclick="abrirMisEnvios()">📄 Mis envíos</button>`}
+      <button class="btn-login" onclick="abrirCambiarPass()">🔑</button>
       <button class="btn-logout" onclick="cerrarSesion()">Salir</button>`;
   } else {
     area.innerHTML = `
@@ -649,6 +705,22 @@ async function cargarTags() {
       const opt = document.createElement("option");
       opt.value = t.id;
       opt.textContent = (t.emoji ? t.emoji + " " : "") + t.nombre;
+      sel.appendChild(opt);
+    });
+  } catch {}
+}
+
+// ── Cargar áreas para selector de envío ─────────────────────
+async function cargarAreasEnvio() {
+  try {
+    const res = await fetch(API + "/areas");
+    const areas = await res.json();
+    const sel = document.getElementById("env-area");
+    sel.innerHTML = '<option value="">Seleccioná un área...</option>';
+    areas.forEach(a => {
+      const opt = document.createElement("option");
+      opt.value = a.id;
+      opt.textContent = (a.emoji || "📚") + " " + a.nombre;
       sel.appendChild(opt);
     });
   } catch {}
@@ -828,6 +900,7 @@ function cerrarSesion() {
 // ── Enviar artículo (estudiante) ─────────────────────────────
 function abrirModalEnviar() {
   document.getElementById("env-error").style.display = "none";
+  cargarAreasEnvio();
   document.getElementById("modal-enviar").classList.add("open");
   document.body.style.overflow = "hidden";
 }
@@ -836,12 +909,13 @@ async function enviarArticulo() {
   const titulo    = document.getElementById("env-titulo").value.trim();
   const tagId     = document.getElementById("env-tag").value;
   const tagNombre = document.getElementById("env-tag").selectedOptions[0]?.text?.replace(/^[^\w]*/, "").trim() || "";
+  const areaId    = document.getElementById("env-area").value;
   const fecha     = document.getElementById("env-fecha").value.trim();
   const excerpt   = document.getElementById("env-excerpt").value.trim();
   const contenido = getQuillHTML(envQuillContenido);
   const errEl     = document.getElementById("env-error");
 
-  if (!titulo || !tagId || !fecha || !excerpt) {
+  if (!titulo || !tagId || !areaId || !fecha || !excerpt) {
     errEl.textContent = "Completá los campos obligatorios (*)";
     errEl.style.display = "block";
     return;
@@ -851,7 +925,8 @@ async function enviarArticulo() {
     const res = await fetch(API + "/noticias/enviar", {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ titulo, tag: tagNombre, fecha, excerpt, contenido, tag_id: parseInt(tagId) })
+      body: JSON.stringify({ titulo, tag: tagNombre, fecha, excerpt, contenido,
+                             tag_id: parseInt(tagId), area_id: parseInt(areaId) })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Error al enviar");
@@ -860,6 +935,7 @@ async function enviarArticulo() {
     ["env-titulo","env-fecha","env-excerpt"].forEach(id => document.getElementById(id).value = "");
     envQuillContenido.setContents([]);
     document.getElementById("env-tag").selectedIndex = 0;
+    document.getElementById("env-area").selectedIndex = 0;
   } catch(e) {
     errEl.textContent = e.message || "Error al enviar el artículo";
     errEl.style.display = "block";
@@ -881,28 +957,31 @@ async function cargarPendientes() {
     const data = await res.json();
     if (!res.ok) throw new Error();
     if (!data.length) {
-      lista.innerHTML = '<p style="color:var(--gris);font-style:italic">No hay artículos pendientes.</p>';
+      lista.innerHTML = '<p style="color:var(--gris);font-style:italic">No hay artículos pendientes en tu área.</p>';
       return;
     }
     lista.innerHTML = data.map(n => `
       <div class="pendiente-item">
         <div class="pendiente-item-header">
-          <div>
+          <div style="flex:1;min-width:0">
             <div class="pendiente-titulo">${esc(n.titulo)}</div>
-            <div class="pendiente-meta">📅 ${esc(n.fecha)} · ✍️ ${esc(n.autor_nombre || "—")} · 🏷️ ${esc(n.tag || "")}</div>
+            <div class="pendiente-meta" style="display:flex;flex-wrap:wrap;gap:.4rem .75rem;margin-top:.3rem">
+              ${n.area_nombre ? `<span style="background:var(--bordo);color:#fff;font-size:.72rem;font-weight:700;padding:.15rem .55rem;border-radius:20px">${esc(n.area_emoji||'')} ${esc(n.area_nombre)}</span>` : ''}
+              <span>✍️ ${esc(n.autor_nombre || "—")}</span>
+              <span>📅 ${esc(n.fecha)}</span>
+              <span>🏷️ ${esc(n.tag || "")}</span>
+            </div>
           </div>
           <div class="pendiente-btns">
-            ${n.excerpt || n.contenido ? `<button class="btn-ver" onclick="togglePrevPendiente(this)">👁 Ver</button>` : ""}
-            <button class="btn-aprobar"  onclick="cambiarEstado(${n.id},'aprobada')">✅ Aprobar</button>
-            <button class="btn-rechazar" onclick="cambiarEstado(${n.id},'rechazada')">❌ Rechazar</button>
+            ${n.contenido ? `<button class="btn-ver" onclick="togglePrevPendiente(this)">👁 Ver</button>` : ""}
+            <button class="btn-aprobar" onclick="cambiarEstado(${n.id},'aprobada')">✅ Aprobar</button>
+            <button class="btn-rechazar" onclick="abrirRechazar(${n.id})">❌ Rechazar</button>
           </div>
         </div>
-        ${n.excerpt ? `<p class="pendiente-excerpt">${esc(n.excerpt)}</p>` : ""}
-        ${n.excerpt || n.contenido ? `
+        ${n.excerpt ? `<p class="pendiente-excerpt" style="margin:.6rem 0 0;font-size:.875rem;color:#4a3a30">${esc(n.excerpt)}</p>` : ""}
+        ${n.contenido ? `
         <div class="pendiente-preview">
-          ${n.contenido
-            ? `<div class="pendiente-contenido">${renderContenido(n.contenido)}</div>`
-            : `<p style="color:var(--gris);font-style:italic;font-size:.85rem">Sin cuerpo extendido.</p>`}
+          <div class="pendiente-contenido">${renderContenido(n.contenido)}</div>
         </div>` : ""}
       </div>`).join("");
   } catch {
@@ -917,18 +996,94 @@ function togglePrevPendiente(btn) {
   btn.textContent = open ? "👁 Ocultar" : "👁 Ver";
 }
 
-async function cambiarEstado(id, estado) {
+async function cambiarEstado(id, estado, motivo = "") {
   try {
     const res = await fetch(`${API}/noticias/${id}/estado`, {
       method: "PUT",
       headers: authHeaders(),
-      body: JSON.stringify({ estado })
+      body: JSON.stringify({ estado, motivo_rechazo: motivo })
     });
     if (!res.ok) throw new Error();
     toast(estado === "aprobada" ? "Artículo aprobado ✅" : "Artículo rechazado");
     await cargarPendientes();
     cargarNoticias(true);
   } catch { toast("Error al cambiar estado", "err"); }
+}
+
+function abrirRechazar(id) {
+  document.getElementById("rech-id").value = id;
+  document.getElementById("rech-motivo").value = "";
+  document.getElementById("modal-rechazar").classList.add("open");
+}
+
+async function confirmarRechazo() {
+  const id     = document.getElementById("rech-id").value;
+  const motivo = document.getElementById("rech-motivo").value.trim();
+  cerrarModal("modal-rechazar");
+  await cambiarEstado(parseInt(id), "rechazada", motivo);
+}
+
+// ── Mis envíos (estudiante) ──────────────────────────────────
+async function abrirMisEnvios() {
+  document.getElementById("modal-mis-envios").classList.add("open");
+  document.body.style.overflow = "hidden";
+  const lista = document.getElementById("mis-envios-list");
+  lista.innerHTML = '<p style="color:var(--gris);font-style:italic">Cargando...</p>';
+  try {
+    const res = await fetch(API + "/noticias/mis-envios", { headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error();
+    if (!data.length) {
+      lista.innerHTML = '<p style="color:var(--gris);font-style:italic">Todavía no enviaste ningún artículo.</p>';
+      return;
+    }
+    const badgeColor = { aprobada: "#15803d", pendiente: "#b45309", rechazada: "#b91c1c" };
+    const badgeLabel = { aprobada: "✅ Aprobado", pendiente: "⏳ Pendiente", rechazada: "❌ Rechazado" };
+    lista.innerHTML = data.map(n => `
+      <div style="padding:.85rem 0;border-bottom:1px solid #f0ebe3">
+        <div style="display:flex;align-items:flex-start;gap:.75rem">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;color:var(--bordo-oscuro);font-size:.95rem">${esc(n.titulo)}</div>
+            <div style="font-size:.8rem;color:var(--gris);margin-top:.2rem">📅 ${esc(n.fecha)}</div>
+          </div>
+          <span style="background:${badgeColor[n.estado]||'#6b7280'};color:#fff;font-size:.72rem;font-weight:700;padding:.2rem .6rem;border-radius:20px;white-space:nowrap">${badgeLabel[n.estado]||n.estado}</span>
+        </div>
+        ${n.motivo_rechazo ? `<div style="margin-top:.5rem;font-size:.82rem;color:#b91c1c;background:#fef2f2;border-radius:6px;padding:.4rem .65rem">💬 ${esc(n.motivo_rechazo)}</div>` : ""}
+      </div>`).join("");
+  } catch {
+    lista.innerHTML = '<p style="color:#b91c1c">Error al cargar tus envíos.</p>';
+  }
+}
+
+// ── Cambiar contraseña (usuario propio) ──────────────────────
+function abrirCambiarPass() {
+  document.getElementById("ucp-actual").value = "";
+  document.getElementById("ucp-nueva").value  = "";
+  document.getElementById("ucp-error").style.display = "none";
+  document.getElementById("modal-cambiar-pass").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+async function guardarCambioPass() {
+  const actual = document.getElementById("ucp-actual").value;
+  const nueva  = document.getElementById("ucp-nueva").value;
+  const errEl  = document.getElementById("ucp-error");
+  if (!actual || !nueva) { errEl.textContent = "Completá ambos campos"; errEl.style.display = "block"; return; }
+  if (nueva.length < 6)  { errEl.textContent = "Mínimo 6 caracteres";  errEl.style.display = "block"; return; }
+  try {
+    const res = await fetch(API + "/auth/cambiar-password-usuario", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ password_actual: actual, password_nueva: nueva })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Error");
+    cerrarModal("modal-cambiar-pass");
+    toast("Contraseña actualizada ✅");
+  } catch(e) {
+    errEl.textContent = e.message || "Error al cambiar contraseña";
+    errEl.style.display = "block";
+  }
 }
 
 // ── Cerrar modales con Escape o click fuera ──────────────────

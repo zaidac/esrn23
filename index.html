@@ -1800,17 +1800,43 @@
       <div class="ap-grid2">
         <div class="ap-mfield"><label>Usuario *</label><input type="text" id="ap-u-username" placeholder="ana.garcia"/></div>
         <div class="ap-mfield"><label>Rol *</label>
-          <select id="ap-u-rol">
+          <select id="ap-u-rol" onchange="apToggleAreaField()">
             <option value="estudiante">👨‍🎓 Estudiante</option>
             <option value="profesor">👩‍🏫 Profesor/a</option>
           </select>
         </div>
+      </div>
+      <div class="ap-mfield" id="ap-u-area-row" style="display:none">
+        <label>Área asignada</label>
+        <select id="ap-u-area">
+          <option value="">Sin área asignada</option>
+        </select>
       </div>
       <div class="ap-mfield"><label>Contraseña *</label><input type="password" id="ap-u-pass" placeholder="Mínimo 6 caracteres"/></div>
     </div>
     <div class="ap-modal-ftr">
       <button type="button" class="ap-btn ap-btn-ghost" onclick="apCloseModal('usuario')">Cancelar</button>
       <button type="button" class="ap-btn ap-btn-primary" onclick="apGuardarUsuario()">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<div class="ap-modal-overlay" id="apmodal-cambiar-pass-usuario">
+  <div class="ap-modal" style="max-width:420px">
+    <div class="ap-modal-hdr">
+      <h4>Cambiar contraseña — <span id="ap-cpu-nombre"></span></h4>
+      <button type="button" class="ap-modal-close" onclick="apCloseModal('cambiar-pass-usuario')">×</button>
+    </div>
+    <div class="ap-modal-body">
+      <input type="hidden" id="ap-cpu-id"/>
+      <div class="ap-mfield">
+        <label>Nueva contraseña *</label>
+        <input type="password" id="ap-cpu-pass" placeholder="Mínimo 6 caracteres"/>
+      </div>
+    </div>
+    <div class="ap-modal-ftr">
+      <button type="button" class="ap-btn ap-btn-ghost" onclick="apCloseModal('cambiar-pass-usuario')">Cancelar</button>
+      <button type="button" class="ap-btn ap-btn-primary" onclick="apGuardarPassUsuario()">Guardar</button>
     </div>
   </div>
 </div>
@@ -2110,6 +2136,20 @@
         document.getElementById("ap-a-desc").value      = "";
         document.getElementById("ap-a-orden").value     = "";
         document.getElementById("apmodal-autoridad-tit").textContent = "Nueva autoridad";
+      } else if (tipo === "usuario") {
+        document.getElementById("ap-u-nombre").value   = "";
+        document.getElementById("ap-u-username").value = "";
+        document.getElementById("ap-u-pass").value     = "";
+        document.getElementById("ap-u-rol").value      = "estudiante";
+        document.getElementById("ap-u-area-row").style.display = "none";
+        const areaSelect = document.getElementById("ap-u-area");
+        areaSelect.innerHTML = '<option value="">Sin área asignada</option>';
+        apAreas.forEach(a => {
+          const opt = document.createElement("option");
+          opt.value = a.id;
+          opt.textContent = (a.emoji || "📚") + " " + a.nombre;
+          areaSelect.appendChild(opt);
+        });
       } else if (tipo === "area") {
         document.getElementById("ap-ar-id").value    = "";
         document.getElementById("ap-ar-nombre").value= "";
@@ -2546,27 +2586,46 @@
       tb.innerHTML = '<tr><td colspan="5" class="ap-empty">No hay usuarios cargados.</td></tr>';
       return;
     }
-    tb.innerHTML = apUsuarios.map(u => `
+    tb.innerHTML = apUsuarios.map(u => {
+      const areaNombre = u.area_id
+        ? (apAreas.find(a => a.id === u.area_id)?.nombre || '—')
+        : '—';
+      return `
       <tr>
         <td><span class="ap-badge-tag">${u.rol === "profesor" ? "👩‍🏫 Profesor" : "👨‍🎓 Estudiante"}</span></td>
-        <td><strong style="color:var(--bordo-oscuro)">${esc(u.nombre)}</strong></td>
+        <td>
+          <strong style="color:var(--bordo-oscuro)">${esc(u.nombre)}</strong>
+          ${u.rol === "profesor" ? `<div style="font-size:.75rem;color:var(--gris);margin-top:2px">🏫 ${esc(areaNombre)}</div>` : ''}
+        </td>
         <td style="color:var(--gris);font-size:.83rem">${esc(u.username)}</td>
         <td>${u.activa
           ? '<span class="ap-badge-on">Activo</span>'
           : '<span class="ap-badge-off">Inactivo</span>'}</td>
         <td><div class="ap-actions">
+          <button type="button" class="ap-btn ap-btn-ghost" onclick="apCambiarPassUsuario(${u.id},'${esc(u.nombre)}')">🔑</button>
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apToggleUsuario(${u.id})">${u.activa ? "Desactivar" : "Activar"}</button>
           <button type="button" class="ap-btn ap-btn-danger" onclick="apDelUsuario(${u.id})">🗑️</button>
         </div></td>
-      </tr>`).join("");
+      </tr>`;
+    }).join("");
   }
 
+  window.apToggleAreaField = function() {
+    const rol = document.getElementById("ap-u-rol").value;
+    const row = document.getElementById("ap-u-area-row");
+    row.style.display = rol === "profesor" ? "block" : "none";
+    if (rol !== "profesor") document.getElementById("ap-u-area").value = "";
+  };
+
   window.apGuardarUsuario = async function() {
+    const rol    = document.getElementById("ap-u-rol").value;
+    const areaEl = document.getElementById("ap-u-area");
     const body = {
       nombre:   document.getElementById("ap-u-nombre").value.trim(),
       username: document.getElementById("ap-u-username").value.trim(),
-      rol:      document.getElementById("ap-u-rol").value,
+      rol,
       password: document.getElementById("ap-u-pass").value,
+      area_id:  (rol === "profesor" && areaEl.value) ? parseInt(areaEl.value) : null,
     };
     if (!body.nombre || !body.username || !body.password) { apToast("Completá todos los campos", "err"); return; }
     if (body.password.length < 6) { apToast("La contraseña debe tener al menos 6 caracteres", "err"); return; }
@@ -2579,8 +2638,29 @@
       apToast("Usuario creado ✅", "ok");
       apCloseModal("usuario");
       ["ap-u-nombre","ap-u-username","ap-u-pass"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("ap-u-area").value = "";
+      document.getElementById("ap-u-area-row").style.display = "none";
       await apCargarUsuarios();
     } catch(e) { apToast(e.message || "Error al crear usuario", "err"); }
+  };
+
+  window.apCambiarPassUsuario = function(id, nombre) {
+    document.getElementById("ap-cpu-id").value = id;
+    document.getElementById("ap-cpu-nombre").textContent = nombre;
+    document.getElementById("ap-cpu-pass").value = "";
+    apOpenModal("cambiar-pass-usuario");
+  };
+
+  window.apGuardarPassUsuario = async function() {
+    const id   = document.getElementById("ap-cpu-id").value;
+    const pass = document.getElementById("ap-cpu-pass").value;
+    if (pass.length < 6) { apToast("Mínimo 6 caracteres", "err"); return; }
+    try {
+      const res = await apFetch("PUT", "/usuarios/" + id + "/password", { password_nueva: pass });
+      if (!res || !res.ok) throw new Error();
+      apToast("Contraseña actualizada ✅", "ok");
+      apCloseModal("cambiar-pass-usuario");
+    } catch { apToast("Error al actualizar contraseña", "err"); }
   };
 
   window.apToggleUsuario = async function(id) {
