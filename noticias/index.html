@@ -231,7 +231,7 @@
     .pendiente-contenido .ql-align-justify { text-align: justify; }
 
     /* ── Quill Snow — overrides tema bordo/crema ── */
-    .env-quill-editor { min-height: 340px; }
+    .env-quill-editor { min-height: 440px; }
     .env-quill-editor .ql-toolbar.ql-snow {
       border: 1.5px solid #ddd6d6; border-bottom: none;
       border-radius: 8px 8px 0 0; background: var(--crema);
@@ -243,7 +243,7 @@
     }
     .env-quill-editor:focus-within .ql-toolbar.ql-snow,
     .env-quill-editor:focus-within .ql-container.ql-snow { border-color: var(--bordo); }
-    .env-quill-editor .ql-editor { min-height: 290px; line-height: 1.75; }
+    .env-quill-editor .ql-editor { min-height: 380px; line-height: 1.75; }
     .env-quill-editor .ql-editor.ql-blank::before { color: var(--gris); font-style: italic; font-size: .88rem; }
     .ql-img-sel { outline: 2.5px solid var(--bordo); outline-offset: 2px; cursor: pointer; }
     .ql-img-controls {
@@ -368,12 +368,7 @@
   <div class="modal-simple" style="max-width:680px">
     <h3>✍️ Enviar artículo</h3>
     <div class="field"><label>Título *</label><input type="text" id="env-titulo" placeholder="Título del artículo"/></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem">
-      <div class="field"><label>Tag *</label>
-        <select id="env-tag">
-          <option value="">Seleccioná un tag...</option>
-        </select>
-      </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
       <div class="field"><label>Área *</label>
         <select id="env-area">
           <option value="">Seleccioná un área...</option>
@@ -383,7 +378,7 @@
       <div class="field"><label>Fecha *</label><input type="text" id="env-fecha" placeholder="DD/MM/AAAA"/></div>
     </div>
     <div class="field">
-      <label>Tags adicionales</label>
+      <label>Tags * <span style="font-weight:400;color:var(--gris)">(seleccioná al menos uno)</span></label>
       <div id="env-tags-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3;font-size:.84rem"></div>
     </div>
     <div class="field"><label>Resumen *</label><textarea id="env-excerpt" placeholder="Breve descripción (aparece en la tarjeta)..."></textarea></div>
@@ -424,6 +419,7 @@
       <button class="btn-ghost" style="flex:1" onclick="cerrarModal('modal-pendientes')">Cerrar</button>
     </div>
   </div>
+</div>
 
 <!-- ── MODAL RECHAZAR ── -->
 <div class="modal-overlay" id="modal-rechazar">
@@ -472,7 +468,6 @@
       <button class="btn-primary" onclick="guardarCambioPass()">Guardar</button>
     </div>
   </div>
-</div>
 </div>
 
 <!-- ── TOAST ── -->
@@ -708,16 +703,7 @@ async function cargarTags() {
       btn.onclick = () => seleccionarTag(btn, t.id);
       cont.appendChild(btn);
     });
-    // Populate enviar select (excluir "Institucional" — solo admins)
-    const sel = document.getElementById("env-tag");
-    tags.forEach(t => {
-      if (t.nombre.toLowerCase() === "institucional") return;
-      const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = (t.emoji ? t.emoji + " " : "") + t.nombre;
-      sel.appendChild(opt);
-    });
-    // Poblar checkboxes de tags adicionales en modal enviar
+    // Poblar checkboxes de tags en modal enviar (excluir "Institucional" — solo admins)
     _renderEnvTagsCb();
   } catch {}
 }
@@ -725,7 +711,8 @@ async function cargarTags() {
 function _renderEnvTagsCb(checkedIds = []) {
   const cb = document.getElementById("env-tags-cb");
   if (!cb) return;
-  cb.innerHTML = _allTags.map(t => `
+  const visibles = _allTags.filter(t => t.nombre.toLowerCase() !== "institucional");
+  cb.innerHTML = visibles.map(t => `
     <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 0">
       <input type="checkbox" name="env-tag-cb" value="${t.id}"
         ${checkedIds.includes(t.id) ? "checked" : ""}
@@ -972,19 +959,22 @@ function abrirModalEnviar() {
 
 async function enviarArticulo() {
   const titulo    = document.getElementById("env-titulo").value.trim();
-  const tagId     = document.getElementById("env-tag").value;
-  const tagNombre = document.getElementById("env-tag").selectedOptions[0]?.text?.replace(/^[^\w]*/, "").trim() || "";
   const areaId    = document.getElementById("env-area").value;
   const emoji     = document.getElementById("env-emoji").value.trim() || "📰";
   const fecha     = document.getElementById("env-fecha").value.trim();
   const excerpt   = document.getElementById("env-excerpt").value.trim();
   const contenido = getQuillHTML(envQuillContenido);
-  const tag_ids   = Array.from(document.querySelectorAll('#env-tags-cb input[type=checkbox]:checked'))
-                      .map(el => parseInt(el.value));
-  const errEl     = document.getElementById("env-error");
+  const checkedCbs = Array.from(document.querySelectorAll('#env-tags-cb input[type=checkbox]:checked'));
+  const tag_ids    = checkedCbs.map(el => parseInt(el.value));
+  const firstTag   = _allTags.find(t => t.id === parseInt(checkedCbs[0]?.value));
+  const tagId      = firstTag ? firstTag.id : null;
+  const tagNombre  = firstTag ? firstTag.nombre : "";
+  const errEl      = document.getElementById("env-error");
 
-  if (!titulo || !tagId || !areaId || !fecha || !excerpt) {
-    errEl.textContent = "Completá los campos obligatorios (*)";
+  if (!titulo || !checkedCbs.length || !areaId || !fecha || !excerpt) {
+    errEl.textContent = !checkedCbs.length
+      ? "Seleccioná al menos un tag"
+      : "Completá los campos obligatorios (*)";
     errEl.style.display = "block";
     return;
   }
@@ -994,7 +984,7 @@ async function enviarArticulo() {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ titulo, tag: tagNombre, fecha, excerpt, contenido, emoji,
-                             tag_id: parseInt(tagId), tag_ids, area_id: parseInt(areaId) })
+                             tag_id: tagId, tag_ids, area_id: parseInt(areaId) })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Error al enviar");
@@ -1002,7 +992,6 @@ async function enviarArticulo() {
     toast("Artículo enviado ✅ — quedará pendiente de aprobación");
     ["env-titulo","env-fecha","env-excerpt","env-emoji"].forEach(id => document.getElementById(id).value = "");
     envQuillContenido.setContents([]);
-    document.getElementById("env-tag").selectedIndex = 0;
     document.getElementById("env-area").selectedIndex = 0;
     _renderEnvTagsCb();
   } catch(e) {
