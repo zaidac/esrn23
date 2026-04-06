@@ -459,7 +459,8 @@ const envQuillContenido = new Quill('#env-contenido-editor', {
   }
 });
 
-function compressImg(file, maxPx, quality, cb) {
+// Comprime imagen a Blob JPEG para subir al servidor
+function compressToBlob(file, maxPx, quality, cb) {
   const reader = new FileReader();
   reader.onload = function(e) {
     const img = new Image();
@@ -472,29 +473,47 @@ function compressImg(file, maxPx, quality, cb) {
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      cb(c.toDataURL('image/jpeg', quality));
+      c.toBlob(function(blob) { cb(blob); }, 'image/jpeg', quality);
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-// Handler: file picker → comprimir → embed inline
+// Handler: file picker → comprimir → subir a R2 → insertar URL en Quill
 envQuillContenido.getModule('toolbar').addHandler('image', function() {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
   input.click();
-  input.onchange = function() {
+  input.onchange = async function() {
     const file = input.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert('Imagen demasiado grande (máx. 10 MB)'); return;
+      toast('Imagen demasiado grande (máx. 10 MB)', 'err'); return;
     }
-    compressImg(file, 1000, 0.78, function(dataUrl) {
-      const range = envQuillContenido.getSelection(true);
-      envQuillContenido.insertEmbed(range ? range.index : 0, 'image', dataUrl, 'user');
-      envQuillContenido.setSelection((range ? range.index : 0) + 1);
+    toast('Subiendo imagen...', 'ok');
+    compressToBlob(file, 1200, 0.82, async function(blob) {
+      try {
+        const fd = new FormData();
+        fd.append('file', blob, 'imagen.jpg');
+        const res = await fetch(API + '/upload-imagen', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + usuarioToken },
+          body: fd
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast('Error al subir imagen: ' + (err.detail || res.status), 'err'); return;
+        }
+        const data = await res.json();
+        const range = envQuillContenido.getSelection(true);
+        envQuillContenido.insertEmbed(range ? range.index : 0, 'image', data.url, 'user');
+        envQuillContenido.setSelection((range ? range.index : 0) + 1);
+        toast('Imagen subida ✓', 'ok');
+      } catch (e) {
+        toast('Error de red al subir imagen', 'err');
+      }
     });
   };
 });
