@@ -2013,6 +2013,64 @@
       .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  // ── EMOJI PICKER ───────────────────────────────────────
+  const EmojiPicker = (() => {
+    const CATS = {
+      "📚 Educación":  ["📚","📖","✏️","📝","📌","📎","🔬","🔭","🏫","🎓","🎒","🖊️","📋","📅","📢","📣","📐","📏","🧮","🧪","🧬"],
+      "🎨 Arte":       ["🎨","🎭","🎤","🎵","🎶","📸","🖼️","🎬","🎪","🎯","🏆","🥇","🎁","🎉","🎊"],
+      "⚽ Deportes":   ["⚽","🏀","🏐","🎾","🏊","🏋️","🤸","⛷️","🧗","🚴","🏅","🎽"],
+      "🌿 Naturaleza": ["🌍","🌱","🌊","🌸","🌟","🌈","🌺","🌻","🍃","🦋","🐝"],
+      "💻 Tecnología": ["💻","🖥️","📱","⚙️","🔧","🔨","💡","🔍","📡","🛡️","🤖","⌨️"],
+      "✨ Símbolos":   ["⭐","❤️","✅","❌","⚠️","🔔","🔑","💬","🤝","📊","📈","🗓️","💫","🎗️"],
+    };
+    let _openPanel = null;
+    document.addEventListener("click", () => { if (_openPanel) { _openPanel.style.display = "none"; _openPanel = null; } });
+    return {
+      attach(id) {
+        const inp = document.getElementById(id);
+        if (!inp || inp.dataset.ep) return;
+        inp.dataset.ep = "1";
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "position:relative;display:inline-flex;gap:4px;align-items:center;width:100%";
+        inp.parentNode.insertBefore(wrap, inp);
+        inp.style.flex = "1";
+        wrap.appendChild(inp);
+        const btn = document.createElement("button");
+        btn.type = "button"; btn.textContent = "🙂"; btn.title = "Elegir emoji";
+        btn.style.cssText = "background:var(--crema,#f7f3ee);border:1px solid #d4c9be;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:1rem;flex-shrink:0;line-height:1.4";
+        wrap.appendChild(btn);
+        const panel = document.createElement("div");
+        panel.style.cssText = "display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:9999;background:#fff;border:1px solid #d4c9be;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.14);padding:10px 12px;min-width:300px;max-height:300px;overflow-y:auto";
+        Object.entries(CATS).forEach(([cat, emojis]) => {
+          const lbl = document.createElement("div");
+          lbl.style.cssText = "font-size:.68rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.06em;margin:6px 0 4px";
+          lbl.textContent = cat;
+          panel.appendChild(lbl);
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;flex-wrap:wrap;gap:1px";
+          emojis.forEach(em => {
+            const b = document.createElement("button");
+            b.type = "button"; b.textContent = em;
+            b.style.cssText = "background:none;border:none;cursor:pointer;font-size:1.25rem;padding:3px 4px;border-radius:4px;line-height:1";
+            b.onmouseenter = () => b.style.background = "#f0ece6";
+            b.onmouseleave = () => b.style.background = "none";
+            b.onclick = ev => { ev.stopPropagation(); inp.value = em; panel.style.display = "none"; _openPanel = null; };
+            row.appendChild(b);
+          });
+          panel.appendChild(row);
+        });
+        wrap.appendChild(panel);
+        btn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          if (_openPanel && _openPanel !== panel) { _openPanel.style.display = "none"; }
+          const opening = panel.style.display === "none";
+          panel.style.display = opening ? "block" : "none";
+          _openPanel = opening ? panel : null;
+        });
+      }
+    };
+  })();
+
   // ── STATS ──────────────────────────────────────────────
   async function apCargarStats() {
     try {
@@ -2185,6 +2243,10 @@
         document.getElementById("apmodal-area-tit").textContent = "Nueva área";
       }
     }
+    // Inicializar emoji picker según el tipo de modal
+    if (tipo === "noticia") EmojiPicker.attach("ap-n-emoji");
+    if (tipo === "area")    EmojiPicker.attach("ap-ar-emoji");
+    if (tipo === "tag")     EmojiPicker.attach("ap-t-emoji");
     document.getElementById("apmodal-" + tipo).classList.add("open");
   };
 
