@@ -1,4 +1,7 @@
+User-agent: Googlebot
+Allow: /
+
 User-agent: *
 Allow: /
 
-Sitemap: https://zaidac.github.io/esrn23/sitemap.xml
+Sitemap: https://esrn23.edu.ar/sitemap.xml
