@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self'"/>
   <link rel="canonical" href="https://esrn23.edu.ar/noticias/articulo/"/>
   <meta property="og:url" content="https://esrn23.edu.ar/noticias/articulo/"/>
   <meta property="og:site_name" content="ESRN N°23 — Cinco Saltos"/>
@@ -242,7 +243,7 @@
     if (!/<[a-z][\s\S]*>/i.test(raw)) {
       return raw.split('\n').filter(Boolean).map(function(l) { return '<p>' + DOMPurify.sanitize(l) + '</p>'; }).join('');
     }
-    return DOMPurify.sanitize(raw, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'class', 'style'] });
+    return DOMPurify.sanitize(raw, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'class'] });
   }
 
   function setTitle(t) {

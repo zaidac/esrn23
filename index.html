@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self'"/>
   <meta name="description" content="Sitio institucional de la ESRN N°23 de Cinco Saltos, Río Negro. Información sobre autoridades, áreas, noticias y contacto."/>
   <meta name="robots" content="index, follow"/>
   <meta name="author" content="ESRN N°23 — Cinco Saltos, Río Negro"/>
@@ -1811,7 +1812,7 @@
         <label>Áreas asignadas</label>
         <div id="ap-u-areas-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:180px;overflow-y:auto;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3"></div>
       </div>
-      <div class="ap-mfield"><label>Contraseña *</label><input type="password" id="ap-u-pass" placeholder="Mínimo 6 caracteres"/></div>
+      <div class="ap-mfield"><label>Contraseña *</label><input type="password" id="ap-u-pass" placeholder="Mínimo 8 caracteres"/></div>
     </div>
     <div class="ap-modal-ftr">
       <button type="button" class="ap-btn ap-btn-ghost" onclick="apCloseModal('usuario')">Cancelar</button>
@@ -1861,7 +1862,7 @@
       <input type="hidden" id="ap-cpu-id"/>
       <div class="ap-mfield">
         <label>Nueva contraseña *</label>
-        <input type="password" id="ap-cpu-pass" placeholder="Mínimo 6 caracteres"/>
+        <input type="password" id="ap-cpu-pass" placeholder="Mínimo 8 caracteres"/>
       </div>
     </div>
     <div class="ap-modal-ftr">
@@ -2692,7 +2693,7 @@
           : '<span class="ap-badge-off">Inactivo</span>'}</td>
         <td><div class="ap-actions">
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apEditUsuario(${u.id})">✏️</button>
-          <button type="button" class="ap-btn ap-btn-ghost" onclick="apCambiarPassUsuario(${u.id},'${esc(u.nombre)}')">🔑</button>
+          <button type="button" class="ap-btn ap-btn-ghost" onclick="apCambiarPassUsuario(${u.id}, ${JSON.stringify(u.nombre)})">🔑</button>
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apToggleUsuario(${u.id})">${u.activa ? "Desactivar" : "Activar"}</button>
           <button type="button" class="ap-btn ap-btn-danger" onclick="apDelUsuario(${u.id})">🗑️</button>
         </div></td>
@@ -2740,7 +2741,7 @@
       area_ids,
     };
     if (!body.nombre || !body.username || !body.password) { apToast("Completá todos los campos", "err"); return; }
-    if (body.password.length < 6) { apToast("La contraseña debe tener al menos 6 caracteres", "err"); return; }
+    if (body.password.length < 8) { apToast("La contraseña debe tener al menos 8 caracteres", "err"); return; }
     try {
       const res = await apFetch("POST", "/usuarios", body);
       if (!res || !res.ok) {
@@ -2799,7 +2800,7 @@
   window.apGuardarPassUsuario = async function() {
     const id   = document.getElementById("ap-cpu-id").value;
     const pass = document.getElementById("ap-cpu-pass").value;
-    if (pass.length < 6) { apToast("Mínimo 6 caracteres", "err"); return; }
+    if (pass.length < 8) { apToast("Mínimo 8 caracteres", "err"); return; }
     try {
       const res = await apFetch("PUT", "/usuarios/" + id + "/password", { password_nueva: pass });
       if (!res || !res.ok) throw new Error();
@@ -2834,7 +2835,7 @@
     const confirmar = document.getElementById("ap-pass-conf").value;
     if (!actual || !nueva) { apToast("Completá todos los campos", "err"); return; }
     if (nueva !== confirmar) { apToast("Las contraseñas no coinciden", "err"); return; }
-    if (nueva.length < 6) { apToast("Mínimo 6 caracteres", "err"); return; }
+    if (nueva.length < 8) { apToast("Mínimo 8 caracteres", "err"); return; }
     try {
       const res = await apFetch("POST", "/auth/cambiar-password", {
         password_actual: actual, password_nueva: nueva
