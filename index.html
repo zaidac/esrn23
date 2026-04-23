@@ -1812,6 +1812,17 @@
         <label>Áreas asignadas</label>
         <div id="ap-u-areas-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:180px;overflow-y:auto;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3"></div>
       </div>
+      <div class="ap-mfield" id="ap-u-anio-row">
+        <label>Año cursado</label>
+        <select id="ap-u-anio">
+          <option value="">— Sin año —</option>
+          <option value="1ro">1er año</option>
+          <option value="2do">2do año</option>
+          <option value="3ro">3er año</option>
+          <option value="4to">4to año</option>
+          <option value="5to">5to año</option>
+        </select>
+      </div>
       <div class="ap-mfield"><label>Contraseña *</label><input type="password" id="ap-u-pass" placeholder="Mínimo 8 caracteres"/></div>
     </div>
     <div class="ap-modal-ftr">
@@ -1843,6 +1854,17 @@
       <div class="ap-mfield" id="ap-eu-area-row" style="display:none">
         <label>Áreas asignadas</label>
         <div id="ap-eu-areas-cb" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;max-height:180px;overflow-y:auto;padding:6px;border:1px solid #e0d8d0;border-radius:6px;background:#faf7f3"></div>
+      </div>
+      <div class="ap-mfield" id="ap-eu-anio-row">
+        <label>Año cursado</label>
+        <select id="ap-eu-anio">
+          <option value="">— Sin año —</option>
+          <option value="1ro">1er año</option>
+          <option value="2do">2do año</option>
+          <option value="3ro">3er año</option>
+          <option value="4to">4to año</option>
+          <option value="5to">5to año</option>
+        </select>
       </div>
     </div>
     <div class="ap-modal-ftr">
@@ -2231,7 +2253,9 @@
         document.getElementById("ap-u-username").value = "";
         document.getElementById("ap-u-pass").value     = "";
         document.getElementById("ap-u-rol").value      = "estudiante";
+        document.getElementById("ap-u-anio").value     = "";
         document.getElementById("ap-u-area-row").style.display = "none";
+        document.getElementById("ap-u-anio-row").style.display = "block";
         apRenderAreaCheckboxes("ap-u-areas-cb");
       } else if (tipo === "area") {
         document.getElementById("ap-ar-id").value    = "";
@@ -2686,6 +2710,7 @@
         <td>
           <strong style="color:var(--bordo-oscuro)">${esc(u.nombre)}</strong>
           ${u.rol === "profesor" ? `<div style="font-size:.75rem;color:var(--gris);margin-top:2px">🏫 ${esc(areasText)}</div>` : ''}
+          ${u.anio ? `<div style="font-size:.75rem;color:var(--dorado);margin-top:2px">📅 ${esc(u.anio)}</div>` : ''}
         </td>
         <td style="color:var(--gris);font-size:.83rem">${esc(u.username)}</td>
         <td>${u.activa
@@ -2693,7 +2718,7 @@
           : '<span class="ap-badge-off">Inactivo</span>'}</td>
         <td><div class="ap-actions">
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apEditUsuario(${u.id})">✏️</button>
-          <button type="button" class="ap-btn ap-btn-ghost" onclick="apCambiarPassUsuario(${u.id}, ${JSON.stringify(u.nombre)})">🔑</button>
+          <button type="button" class="ap-btn ap-btn-ghost" onclick="apCambiarPassUsuario(${u.id}, ${esc(JSON.stringify(u.nombre))})">🔑</button>
           <button type="button" class="ap-btn ap-btn-ghost" onclick="apToggleUsuario(${u.id})">${u.activa ? "Desactivar" : "Activar"}</button>
           <button type="button" class="ap-btn ap-btn-danger" onclick="apDelUsuario(${u.id})">🗑️</button>
         </div></td>
@@ -2720,25 +2745,27 @@
 
   window.apToggleAreaField = function() {
     const rol = document.getElementById("ap-u-rol").value;
-    const row = document.getElementById("ap-u-area-row");
-    row.style.display = rol === "profesor" ? "block" : "none";
+    document.getElementById("ap-u-area-row").style.display = rol === "profesor" ? "block" : "none";
+    document.getElementById("ap-u-anio-row").style.display = rol === "estudiante" ? "block" : "none";
   };
 
   window.apToggleAreaFieldEdit = function() {
     const rol = document.getElementById("ap-eu-rol").value;
-    const row = document.getElementById("ap-eu-area-row");
-    row.style.display = rol === "profesor" ? "block" : "none";
+    document.getElementById("ap-eu-area-row").style.display = rol === "profesor" ? "block" : "none";
+    document.getElementById("ap-eu-anio-row").style.display = rol === "estudiante" ? "block" : "none";
   };
 
   window.apGuardarUsuario = async function() {
     const rol = document.getElementById("ap-u-rol").value;
     const area_ids = rol === "profesor" ? apGetCheckedAreaIds("ap-u-areas-cb") : [];
+    const anio = rol === "estudiante" ? (document.getElementById("ap-u-anio").value || null) : null;
     const body = {
       nombre:   document.getElementById("ap-u-nombre").value.trim(),
       username: document.getElementById("ap-u-username").value.trim(),
       rol,
       password: document.getElementById("ap-u-pass").value,
       area_ids,
+      anio,
     };
     if (!body.nombre || !body.username || !body.password) { apToast("Completá todos los campos", "err"); return; }
     if (body.password.length < 8) { apToast("La contraseña debe tener al menos 8 caracteres", "err"); return; }
@@ -2761,9 +2788,11 @@
     document.getElementById("ap-eu-nombre").value   = u.nombre;
     document.getElementById("ap-eu-username").value = u.username;
     document.getElementById("ap-eu-rol").value      = u.rol;
+    document.getElementById("ap-eu-anio").value     = u.anio || "";
     const checkedIds = Array.isArray(u.area_ids_list) ? u.area_ids_list : [];
     apRenderAreaCheckboxes("ap-eu-areas-cb", checkedIds);
     document.getElementById("ap-eu-area-row").style.display = u.rol === "profesor" ? "block" : "none";
+    document.getElementById("ap-eu-anio-row").style.display = u.rol === "estudiante" ? "block" : "none";
     apOpenModal("editar-usuario");
   };
 
@@ -2771,11 +2800,13 @@
     const id  = document.getElementById("ap-eu-id").value;
     const rol = document.getElementById("ap-eu-rol").value;
     const area_ids = rol === "profesor" ? apGetCheckedAreaIds("ap-eu-areas-cb") : [];
+    const anio = rol === "estudiante" ? (document.getElementById("ap-eu-anio").value || null) : null;
     const body = {
       nombre:   document.getElementById("ap-eu-nombre").value.trim(),
       username: document.getElementById("ap-eu-username").value.trim(),
       rol,
       area_ids,
+      anio,
     };
     if (!body.nombre || !body.username) { apToast("Completá todos los campos", "err"); return; }
     try {

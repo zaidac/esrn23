@@ -71,6 +71,14 @@
     }
     .hero-inner { position: relative; z-index: 1; }
     .hero-label { font-size: .73rem; letter-spacing: .15em; text-transform: uppercase; color: var(--dorado); font-weight: 600; margin-bottom: .5rem; animation: fadeUp .6s ease both; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(196,154,44,.18); color: var(--dorado);
+      border: 1px solid rgba(196,154,44,.45);
+      border-radius: 99px; padding: .3rem 1.2rem;
+      font-size: .75rem; font-weight: 600; letter-spacing: .13em; text-transform: uppercase;
+      margin-bottom: 1.2rem; animation: fadeUp .65s .1s ease both;
+    }
     .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.6rem); animation: fadeUp .65s .1s ease both; }
     .hero p { margin-top: .5rem; opacity: .8; font-size: .95rem; animation: fadeUp .65s .2s ease both; }
     @keyframes fadeUp {
@@ -315,7 +323,7 @@
 <!-- ── HERO ── -->
 <div class="hero">
   <div class="hero-inner">
-    <p class="hero-label">ESRN N°23 · Cinco Saltos, Río Negro</p>
+    <div class="hero-badge">ESRN N°23 · Cinco Saltos, Río Negro</div>
     <h1>Noticias y eventos</h1>
     <p>Todas las novedades institucionales en un solo lugar</p>
   </div>
@@ -329,6 +337,15 @@
   </div>
   <!-- Filtros por área -->
   <div class="filtros" id="filtros-areas" style="margin-top:.4rem"></div>
+  <!-- Filtros por año -->
+  <div class="filtros" id="filtros-anio" style="margin-top:.4rem">
+    <button class="chip active" data-anio="" onclick="seleccionarAnio(this,'')">Todos los años</button>
+    <button class="chip" data-anio="1ro" onclick="seleccionarAnio(this,'1ro')">1er año</button>
+    <button class="chip" data-anio="2do" onclick="seleccionarAnio(this,'2do')">2do año</button>
+    <button class="chip" data-anio="3ro" onclick="seleccionarAnio(this,'3ro')">3er año</button>
+    <button class="chip" data-anio="4to" onclick="seleccionarAnio(this,'4to')">4to año</button>
+    <button class="chip" data-anio="5to" onclick="seleccionarAnio(this,'5to')">5to año</button>
+  </div>
 
   <!-- Grid de artículos -->
   <div class="news-grid" id="news-grid">
@@ -343,7 +360,10 @@
 
 <!-- ── FOOTER ── -->
 <div class="footer-divider"></div>
-<footer>© 2026 · <strong>ESRN N°23 · Cinco Saltos, Río Negro</strong></footer>
+<footer>
+  <p>© 2026 · <strong>ESRN N°23 · Cinco Saltos, Río Negro</strong></p>
+  <p style="margin-top:.4rem">Sitio desarrollado por estudiantes de la institución</p>
+</footer>
 
 <!-- ── MODAL ARTÍCULO COMPLETO ── -->
 <div class="modal-overlay" id="modal-articulo">
@@ -474,12 +494,47 @@
     </div>
     <div class="field">
       <label>Nueva contraseña *</label>
-      <input type="password" id="ucp-nueva" placeholder="Mínimo 6 caracteres"/>
+      <input type="password" id="ucp-nueva" placeholder="Mínimo 8 caracteres"/>
     </div>
     <p class="error-msg" id="ucp-error" style="display:none"></p>
     <div class="modal-btns">
       <button class="btn-ghost" onclick="cerrarModal('modal-cambiar-pass')">Cancelar</button>
       <button class="btn-primary" onclick="guardarCambioPass()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CREAR ESTUDIANTE (para profesores) ── -->
+<div class="modal-overlay" id="modal-crear-estudiante">
+  <div class="modal-simple" style="max-width:420px">
+    <h3>➕ Nuevo estudiante</h3>
+    <div class="field">
+      <label>Nombre completo *</label>
+      <input type="text" id="ce-nombre" placeholder="Ej: Lucía Fernández"/>
+    </div>
+    <div class="field">
+      <label>Nombre de usuario *</label>
+      <input type="text" id="ce-username" placeholder="Ej: lucia.fernandez"/>
+    </div>
+    <div class="field">
+      <label>Contraseña *</label>
+      <input type="password" id="ce-password" placeholder="Mínimo 8 caracteres"/>
+    </div>
+    <div class="field">
+      <label>Año cursado</label>
+      <select id="ce-anio">
+        <option value="">— Sin año —</option>
+        <option value="1ro">1er año</option>
+        <option value="2do">2do año</option>
+        <option value="3ro">3er año</option>
+        <option value="4to">4to año</option>
+        <option value="5to">5to año</option>
+      </select>
+    </div>
+    <p class="error-msg" id="ce-error" style="display:none"></p>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="cerrarModal('modal-crear-estudiante')">Cancelar</button>
+      <button class="btn-primary" onclick="guardarNuevoEstudiante()">Crear estudiante</button>
     </div>
   </div>
 </div>
@@ -655,6 +710,7 @@ let paginaActual = 1;
 const LIMITE = 9;
 let tagSeleccionado  = null;
 let areaSeleccionada = null;
+let anioSeleccionado = null;
 let totalNoticias = 0;
 let usuarioToken = localStorage.getItem("esrn_usuario_token");
 let usuarioNombre = localStorage.getItem("esrn_usuario_nombre");
@@ -747,7 +803,8 @@ function renderNavUsuario() {
       <a href="../" class="nav-back">← Volver</a>
       <span class="nav-user-name">👤 ${esc(usuarioNombre)}</span>
       ${esProf
-        ? `<button class="btn-login btn-revisar" onclick="abrirPendientes()">📋 Revisar pendientes</button>`
+        ? `<button class="btn-login btn-revisar" onclick="abrirPendientes()">📋 Revisar pendientes</button>
+           <button class="btn-login" onclick="abrirCrearEstudiante()">➕ Nuevo estudiante</button>`
         : `<button class="btn-enviar" onclick="abrirModalEnviar()">✍️ Enviar artículo</button>
            <button class="btn-login" onclick="abrirMisEnvios()">📄 Mis envíos</button>`}
       <button class="btn-login" onclick="abrirCambiarPass()">🔑</button>
@@ -851,6 +908,16 @@ function seleccionarTag(btn, tagId) {
   cargarNoticias(true);
 }
 
+function seleccionarAnio(btn, anio) {
+  document.querySelectorAll("#filtros-anio .chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  anioSeleccionado = anio || null;
+  paginaActual = 1;
+  totalNoticias = 0;
+  document.getElementById("news-grid").innerHTML = '<p class="estado-msg">Cargando...</p>';
+  cargarNoticias(true);
+}
+
 // ── Cargar noticias ──────────────────────────────────────────
 async function cargarNoticias(reset = false) {
   if (reset) { paginaActual = 1; totalNoticias = 0; }
@@ -858,6 +925,7 @@ async function cargarNoticias(reset = false) {
     let url = `${API}/noticias/publicas?page=${paginaActual}&limit=${LIMITE}`;
     if (tagSeleccionado)  url += `&tag_id=${tagSeleccionado}`;
     if (areaSeleccionada) url += `&area_id=${areaSeleccionada}`;
+    if (anioSeleccionado) url += `&anio=${encodeURIComponent(anioSeleccionado)}`;
     const res = await fetch(url);
     const data = await res.json();
     const grid = document.getElementById("news-grid");
@@ -1236,7 +1304,7 @@ async function guardarCambioPass() {
   const nueva  = document.getElementById("ucp-nueva").value;
   const errEl  = document.getElementById("ucp-error");
   if (!actual || !nueva) { errEl.textContent = "Completá ambos campos"; errEl.style.display = "block"; return; }
-  if (nueva.length < 6)  { errEl.textContent = "Mínimo 6 caracteres";  errEl.style.display = "block"; return; }
+  if (nueva.length < 8)  { errEl.textContent = "Mínimo 8 caracteres";  errEl.style.display = "block"; return; }
   try {
     const res = await fetch(API + "/auth/cambiar-password-usuario", {
       method: "POST",
@@ -1244,11 +1312,61 @@ async function guardarCambioPass() {
       body: JSON.stringify({ password_actual: actual, password_nueva: nueva })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Error");
+    if (!res.ok) throw new Error(
+      Array.isArray(data.detail)
+        ? (data.detail[0]?.msg || "Error de validación")
+        : (data.detail || "Error")
+    );
     cerrarModal("modal-cambiar-pass");
     toast("Contraseña actualizada ✅");
   } catch(e) {
     errEl.textContent = e.message || "Error al cambiar contraseña";
+    errEl.style.display = "block";
+  }
+}
+
+// ── Crear estudiante (solo para profesores) ─────────────────
+function abrirCrearEstudiante() {
+  document.getElementById("ce-nombre").value    = "";
+  document.getElementById("ce-username").value  = "";
+  document.getElementById("ce-password").value  = "";
+  document.getElementById("ce-anio").value      = "";
+  document.getElementById("ce-error").style.display = "none";
+  document.getElementById("modal-crear-estudiante").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+async function guardarNuevoEstudiante() {
+  const nombre   = document.getElementById("ce-nombre").value.trim();
+  const username = document.getElementById("ce-username").value.trim();
+  const password = document.getElementById("ce-password").value;
+  const anio     = document.getElementById("ce-anio").value || null;
+  const errEl    = document.getElementById("ce-error");
+  errEl.style.display = "none";
+  if (!nombre || !username || !password) {
+    errEl.textContent = "Completá los campos obligatorios (*)";
+    errEl.style.display = "block"; return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = "La contraseña debe tener al menos 8 caracteres";
+    errEl.style.display = "block"; return;
+  }
+  try {
+    const res = await fetch(API + "/usuarios/crear-estudiante", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ nombre, username, password, anio })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(
+      Array.isArray(data.detail)
+        ? (data.detail[0]?.msg || "Error de validación")
+        : (data.detail || "Error al crear estudiante")
+    );
+    cerrarModal("modal-crear-estudiante");
+    toast(`Estudiante ${esc(nombre)} creado ✅`);
+  } catch(e) {
+    errEl.textContent = e.message || "Error al crear estudiante";
     errEl.style.display = "block";
   }
 }
